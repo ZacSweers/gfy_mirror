@@ -101,7 +101,7 @@ class MirroredObject():
         return info['mp4Url'], info['webmUrl'], info['gifUrl']
 
     def fitbamob_urls(self, fit_id):
-        info = get_fitbamob_info(fit_id)
+        info = get_fitbamob_info(fit_id)['source']
         return info['mp4_url'], info['webm_url'], info['gif_url']
 
     def mc_url(self, media_type, mc_id):
