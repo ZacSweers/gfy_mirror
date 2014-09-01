@@ -74,15 +74,12 @@ class MirroredObject():
             s += "\n\n"
         if self.mediacrush_url:
             mc_id = get_id(self.mediacrush_url)
-            s += "* [Mediacrush](%s) | [mp4](%s) - [webm](%s) - [gif](%s) - [ogg](%s)" % (self.mediacrush_url,
-                                                                                          self.mc_url("mp4",
-                                                                                                      mc_id),
-                                                                                          self.mc_url("webm",
-                                                                                                      mc_id),
-                                                                                          self.mc_url("gif",
-                                                                                                      mc_id),
-                                                                                          self.mc_url("ogv",
-                                                                                                      mc_id))
+            s += "* [Mediacrush](%s) | " % self.mediacrush_url
+            s += "[mp4](%s)" % self.mc_url("mp4", mc_id)
+            s += " - [webm](%s)" % self.mc_url("webm", mc_id)
+            if "gfycat" not in self.original_url:
+                s += " - [gif](%s)" % self.mc_url("gif", mc_id)
+            s += " - [ogg](%s)" % self.mc_url("ogv", mc_id)
             s += "\n\n"
         if self.fitbamob_url:
             s += "* [Fitbamob](%s)" % self.fitbamob_url
