@@ -1,0 +1,5 @@
+praw==2.1.18
+requests==2.3.0
+pyquery==1.2.8
+python-binary-memcached==0.24.2
+psycopg2==2.5.4
