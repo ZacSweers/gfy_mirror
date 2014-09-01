@@ -118,8 +118,8 @@ def retrieve_login_credentials():
 
 
 # Retrieves the extension
-def extension(url):
-    return os.path.splitext(url)[1]
+def extension(url_to_split):
+    return os.path.splitext(url_to_split)[1]
 
 
 # Validates if a submission should be posted
