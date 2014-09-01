@@ -41,7 +41,7 @@ Mirrored links
 
 comment_info = """\n\n------
 [^Source ^Code](https://github.com/hzsweers/TODO) ^|
-[^Feedback/Bugs?](http://www.reddit.com/message/compose?to=pandanomic) ^| ^By ^/u/pandanomic
+[^Feedback/Bugs?](http://www.reddit.com/message/compose?to=pandanomic) ^| ^By ^/[u/pandanomic](http://reddit.com/u/pandanomic)
 """
 
 
