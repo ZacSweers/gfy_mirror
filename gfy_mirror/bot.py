@@ -40,7 +40,7 @@ Mirrored links
 """
 
 comment_info = """\n\n------
-[^Source ^Code](https://github.com/hzsweers/TODO) ^|
+[^Source ^Code](https://github.com/hzsweers/gfy_mirror) ^|
 [^Feedback/Bugs?](http://www.reddit.com/message/compose?to=pandanomic&subject=gfymirror) ^| ^By ^/[u/pandanomic](http://reddit.com/u/pandanomic)
 """
 
