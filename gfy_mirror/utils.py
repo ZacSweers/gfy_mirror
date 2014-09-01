@@ -1,8 +1,10 @@
+import json
 import random
 import string
 import urllib
 from pyquery import pyquery
 import requests
+from pycrush import Media
 
 __author__ = 'Henri Sweers'
 
@@ -49,6 +51,43 @@ def gfycat_convert(url_to_convert):
     else:
         log('----failed', Color.RED)
         return "Error"
+
+
+# Convert to mediacrush
+def mediacrush_convert(url_to_convert):
+    log('--Converting to mediacrush')
+
+    # Convert
+    media = Media()
+    response = media.upload(url_to_convert)
+    return "https://mediacru.sh/%s" % response.hash
+
+
+def fitbamob_convert(title, url_to_convert):
+    log('--Converting to fitbamob')
+    req_data = {
+        'url': url_to_convert,
+        'title': title
+    }
+    r = requests.post(
+        'http://fitbamob.com/api/v1/upload-url',
+        data=json.dumps(req_data),
+        headers={
+            'Content-type': 'application/json',
+            'Accept': 'application/json'
+        }
+    )
+    assert r.status_code == 200
+    error_text = r.json().get('error')
+    if error_text:
+        log('----Error uploading gif: ' + error_text, Color.RED)
+        print('Error uploading gif: ' + error_text)
+        return None
+    else:
+        upload_id = r.json()['id']
+        canonical_url = r.json()['canonical_url']
+        log('----Started conversion of gif, video will be available under ' + canonical_url, Color.BLUE)
+        return canonical_url
 
 
 # Returns the .mp4 url of a vine video

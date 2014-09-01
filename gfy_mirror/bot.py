@@ -9,9 +9,10 @@ import time
 import datetime
 import urlparse
 import praw
+import praw.helpers
 import signal
 import psycopg2
-from utils import log, Color
+from utils import log, Color, retrieve_vine_video_url, gfycat_convert
 
 __author__ = 'Henri Sweers'
 
@@ -27,20 +28,64 @@ running_on_heroku = False
 # Dry runs
 dry_run = False
 
+# Bot name
+bot_name = "gfy_mirror"
 
-class MirroredObject:
+
+class MirroredObject():
+    op_id = None
+    original_url = None
+    gfycat_url = None
+    mediacrush_url = None
+    fitbamob_url = None
+
     def __init__(self, op_id, original_url, json_data=None):
         if json_data:
             self.__dict__ = json.loads(json_data)
         else:
             self.op_id = op_id
             self.original_url = original_url
-            self.gfycat_url = ""
-            self.mediacrush_url = ""
-            self.fitbamob_url = ""
+
+    def comment_string(self):
+        s = "\n\n"
+        if self.original_url:
+            s += "* [Original](%s)" % self.gfycat_url
+            s += "\n"
+        if self.gfycat_url:
+            gfy_id = get_id(self.gfycat_url)
+            s += "* [Gfycat](%s) | ([mp4](%s)) ([webm](%s)) ([gif](%s))" % (self.gfycat_url,
+                                                                            self.gfycat_mp4(gfy_id),
+                                                                            self.gfycat_webm(gfy_id),
+                                                                            self.gfycat_gif(gfy_id))
+            s += "\n"
+        if self.mediacrush_url:
+            mc_id = get_id(self.mediacrush_url)
+            s += "* [Mediacrush](%s) | ([mp4](%s)) ([webm](%s)) ([gif](%s)) ([ogg](%s))" % (self.mediacrush_url,
+                                                                                            self.mc_url("mp4", mc_id),
+                                                                                            self.mc_url("webm", mc_id),
+                                                                                            self.mc_url("gif", mc_id),
+                                                                                            self.mc_url("ogv", mc_id))
+            s += "\n"
+        if self.fitbamob_url:
+            s += "* [Fitbamob](%s)" % self.fitbamob_url
+            s += "\n"
+        s += "\n\n"
+        return s
 
     def to_json(self):
         return json.dumps(self.__dict__)
+
+    def gfycat_webm(self, gfy_id):
+        return "http://zippy.gfycat.com/%s.webm" % gfy_id
+
+    def gfycat_mp4(self, gfy_id):
+        return "http://fat.gfycat.com/%s.mp4" % gfy_id
+
+    def gfycat_gif(self, gfy_id):
+        return "http://giant.gfycat.com/%s.gif" % gfy_id
+
+    def mc_url(self, media_type, mc_id):
+        return "https://cdn.mediacru.sh/%s.%s" % (mc_id, media_type)
 
 
 # Called when exiting the program
@@ -79,11 +124,11 @@ def check_cache(input_key):
 
 # Cache a key (original url, gfy url, or submission id)
 def cache_key(input_key):
-    if running_on_heroku:
-        mc.set(str(input_key), "True")
-        assert str(mc.get(str(input_key))) == "True"
-    else:
-        already_done.append(input_key)
+    # if running_on_heroku:
+    # mc.set(str(input_key), "True")
+    #     assert str(mc.get(str(input_key))) == "True"
+    # else:
+    #     already_done.append(input_key)
 
     log('--Cached ' + str(input_key), Color.GREEN)
 
@@ -122,19 +167,55 @@ def extension(url_to_split):
     return os.path.splitext(url_to_split)[1]
 
 
+# Checks if we've already commented there
+def previously_commented(submission):
+    flat_comments = praw.helpers.flatten_tree(submission.comments)
+    for comment in flat_comments:
+        try:
+            if comment.author.name == bot_name:
+                cache_key(submission.id)
+                cache_key(submission.url)
+                return True
+        except:
+            return False
+
+    return False
+
+
 # Validates if a submission should be posted
 def submission_is_valid(submission):
-    # check domain and extension validity
-    if submission.domain in allowedDomains \
-            or extension(submission.url) in allowedExtensions:
+    # check domain/extension validity, caches, and if previously commented
+    if (submission.domain in allowedDomains and not extension(submission.url) in disabled_extensions) or extension(
+            submission.url) in allowed_extensions:
         # Check for submission id and url
-        return not (check_cache(submission.id) or check_cache(submission.url))
+        return not (check_cache(submission.id) or check_cache(submission.url) or previously_commented(submission))
     return False
+
+
+# Gets the id of a video assuming it's of the "website.com/<id>" type
+def get_id(url_to_get):
+    return url_to_get.split('/')[-1]
 
 
 # Process a gif post
 def process_submission(submission):
-    pass
+    new_mirror = MirroredObject(submission.id, submission.url)
+    already_gfycat = False
+    url_to_process = submission.url
+    if submission.domain == "vine.co":
+        url_to_process = retrieve_vine_video_url(url_to_process)
+    elif submission.domain == "gfycat.com":
+        new_mirror.gfycat_url = url_to_process
+        url_to_process = "http://www.fat.gfycat.com/%s.mp4" % get_id(url_to_process)
+
+    # if submission.domain == "giant.gfycat.com":
+    #     # Just get the gfycat url
+    #     url_to_process = url_to_process.replace("giant.", "")
+    #     new_mirror.gfycat_url = url_to_process
+    #     already_gfycat = True
+    #
+    # if not already_gfycat:
+    #     new_mirror.gfycat_url = gfycat_convert(url_to_process)
 
 
 # Main bot runner
@@ -144,7 +225,7 @@ def bot():
     for submission in soccer_subreddit.get_new(limit=30):
         if submission_is_valid(submission):
             new_count += 1
-            log("New Post", Color.GREEN)
+            log("New Post - " + submission.url, Color.GREEN)
             process_submission(submission)
         else:
             pass
@@ -173,16 +254,17 @@ if __name__ == "__main__":
                                os.environ.get('MEMCACHEDCLOUD_USERNAME'),
                                os.environ.get('MEMCACHEDCLOUD_PASSWORD'))
 
-        urlparse.uses_netloc.append("postgres")
-        url = urlparse.urlparse(os.environ["DATABASE_URL"])
-
-        conn = psycopg2.connect(
-            database=url.path[1:],
-            user=url.username,
-            password=url.password,
-            host=url.hostname,
-            port=url.port
-        )
+        # TODO Eventually we'll want to DB this instead
+        # urlparse.uses_netloc.append("postgres")
+        # url = urlparse.urlparse(os.environ["DATABASE_URL"])
+        #
+        # conn = psycopg2.connect(
+        # database=url.path[1:],
+        #     user=url.username,
+        #     password=url.password,
+        #     host=url.hostname,
+        #     port=url.port
+        # )
 
     if len(opts) != 0:
         for o, a in opts:
@@ -234,10 +316,13 @@ if __name__ == "__main__":
         "gfycat.com",
         "vine.co",
         "giant.gfycat.com",
+        "mediacru.sh",
         "fitbamob.com",
-        "imgur.com"]
+        "imgur.com",
+        "i.imgur.com"]
 
-    allowedExtensions = [".gif"]
+    allowed_extensions = [".gif"]
+    disabled_extensions = [".jpg", ".jpeg", ".png"]
 
     # Array with previously linked posts
     # Check the db cache first

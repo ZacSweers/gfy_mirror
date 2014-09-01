@@ -1,27 +1,39 @@
 import requests
 import re
-import time
 
 re_path_template = re.compile('\<\w+\>')
 
-class PyCrushException(Exception): pass
+
+class PyCrushException(Exception):
+    pass
+
+
 class SpecificException(PyCrushException):
     def __init__(self, message, code):
         super(PyCrushException, self).__init__(self, message)
         self.code = code
         self.message = message
 
-class UploadException(SpecificException): pass
-class MediaException(SpecificException): pass
-class ProcessingException(SpecificException): pass
+
+class UploadException(SpecificException):
+    pass
+
+
+class MediaException(SpecificException):
+    pass
+
+
+class ProcessingException(SpecificException):
+    pass
+
 
 def bind(**cfg):
     class APIMethod(object):
-        endpoint = cfg['endpoint'] # It's okay to blow up if the endpoint is not provided.
+        endpoint = cfg['endpoint']  # It's okay to blow up if the endpoint is not provided.
         method = cfg.get('method', 'GET')
-        required_parameters = cfg.get('parameters', []) 
+        required_parameters = cfg.get('parameters', [])
 
-        _args = dict() 
+        _args = dict()
         _request_kwargs = dict()
 
         def __init__(self, base, params):
@@ -35,30 +47,31 @@ def bind(**cfg):
                         value = ','.join(value)
                 except KeyError:
                     raise PyCrushException("Variable %r has no value." % name)
-                
-                del params[name] # If we get here it means it's not a POST param and is safe to delete.
+
+                del params[name]  # If we get here it means it's not a POST param and is safe to delete.
                 self._url = self._url.replace(v, value)
-            
+
             for param in self.required_parameters:
                 if param not in params:
                     raise PyCrushException("Required parameter %r is not present." % param)
-       
-                value = params[param] 
+
+                value = params[param]
                 if param == 'file':
                     self._request_kwargs['files'] = {param: value}
                 else:
-                    self._args[param] = value 
-   
-            self._request_kwargs['data'] = self._args 
-             
+                    self._args[param] = value
+
+            self._request_kwargs['data'] = self._args
+
         def run(self):
             rq = requests.request(self.method, self._url, **self._request_kwargs)
             return rq.json(), rq.status_code
 
-    def _call(api, **params): # _call is called as an instance method; i.e, `api` is `self`.
+    def _call(api, **params):  # _call is called as an instance method; i.e, `api` is `self`.
         return APIMethod(api.base, params).run()
 
     return _call
+
 
 class API(object):
     def __init__(self, base='https://mediacru.sh/'):
@@ -95,11 +108,12 @@ class API(object):
         parameters=['url']
     )
 
+
 class LazyProperty(object):
     sources = {
         'compression': 'single',
         'files': 'single',
-        'original': 'single', 
+        'original': 'single',
         'type': 'single',
         'status': 'status'
     }
@@ -115,16 +129,17 @@ class LazyProperty(object):
 
     def __get__(self, instance, owner):
         func = getattr(instance.api, self.sources.get(self.name, instance.api.single))
-        
+
         result, code = func(hash=instance.hash)
         if code != 200:
-            raise MediaException("The media cannot be found", code) 
+            raise MediaException("The media cannot be found", code)
 
         instance.populate(result)
         if self.name != 'status' and instance.status in self.bad_statuses:
             raise ProcessingException(self.bad_statuses[instance.status], instance.status)
 
         return result[self.name]
+
 
 class Media(object):
     @classmethod
@@ -145,14 +160,14 @@ class Media(object):
 
         if isinstance(obj, file):
             result, code = api.upload_file(file=obj)
-        elif isinstance(obj, str): # It's a string -> URL.
+        elif isinstance(obj, str):  # It's a string -> URL.
             result, code = api.upload_url(url=obj)
-        
+
         if code in failure_codes:
             raise UploadException(failure_codes[code], code)
         if code not in success_codes:
             raise PyCrushException("MediaCrush returned an unknown code (%d)." % code)
-   
+
         result.update({
             'message': success_codes[code],
             'code': code,
@@ -171,7 +186,7 @@ class Media(object):
             raise MediaException("The media cannot be found.", code)
 
         params = {
-            'hash': hash, 
+            'hash': hash,
             'api': api,
         }
 
@@ -198,11 +213,12 @@ class Media(object):
     def __init__(self, **kw):
         self.populate(kw)
 
+
 if __name__ == '__main__':
     import sys, time
 
     media = Media.upload(sys.argv[1])
-    #media = Media.get(sys.argv[1])
+    # media = Media.get(sys.argv[1])
 
     media.ready_block()
     print media.compression, media.original, media.status
