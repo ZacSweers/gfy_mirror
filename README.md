@@ -14,6 +14,13 @@ Reddit bot to mirror gifs and gfys across a few different services while also co
 - Mediacrush
 - Fitbamob
 
+### TODO
+- Currently, it won't mirror Fitbamob videos due to no easily available API for retrieving the .mp4 url. I can extract it manually though via the html, the same way I handle Vines.
+- I plan to eventually use a full database for this, where each MirrorObject is represented by a row. This way, if I ever come across a URL that's just a mirror of a pre-existing one, I can just retrieve it directly from the DB and save processing time on my end and the services' APIs.
+
+### Credits
+- [PyCrush](https://github.com/MediaCrush/PyCrush) API wrapper for Mediacrush
+
 ### License
 
      The MIT License (MIT)

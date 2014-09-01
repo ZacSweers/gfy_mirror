@@ -35,7 +35,7 @@ bot_name = "gfy_mirror"
 
 # Comment string
 comment_intro = """
-Mirrored gfy links:
+Mirrored links
 ------
 """
 
@@ -63,7 +63,7 @@ class MirroredObject():
         s = "\n"
         if self.original_url:
             if "vine.co" in self.original_url:
-                s += "*NOTE: The original url was a Vine, which has audio. The below links do not.*\n\n"
+                s += "*NOTE: The original url was a Vine, which has audio. Gfycat removes audio, but the others should be fine*\n\n"
             s += "* [Original](%s)" % self.original_url
             s += "\n\n"
         if self.gfycat_url:
