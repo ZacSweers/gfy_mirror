@@ -166,7 +166,7 @@ class Media(object):
         if code in failure_codes:
             raise UploadException(failure_codes[code], code)
         if code not in success_codes:
-            raise PyCrushException("MediaCrush returned an unknown code (%d)." % code)
+            raise PyCrushException("MediaCrush returned an unknown code (%s)." % code)
 
         result.update({
             'message': success_codes[code],

@@ -59,7 +59,7 @@ def mediacrush_convert(url_to_convert):
 
     # Convert
     media = Media()
-    response = media.upload(url_to_convert)
+    response = media.upload(str(url_to_convert))
     return "https://mediacru.sh/%s" % response.hash
 
 
@@ -103,3 +103,15 @@ def retrieve_vine_video_url(vine_url):
 # Borrowed from here: http://stackoverflow.com/a/16962716/3034339
 def gen_random_string():
     return ''.join(random.sample(string.letters * 10, 10))
+
+
+# Gets the id of a video assuming it's of the "website.com/<id>" type
+def get_id(url_to_get):
+    return url_to_get.split('/')[-1]
+
+
+# Get gfycat info
+def get_gfycat_info(gfy_id):
+    response = requests.get("http://www.gfycat.com/cajax/get/%s" % gfy_id)
+    jdata = json.loads(response.content)
+    return jdata['gfyItem']

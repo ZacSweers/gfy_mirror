@@ -12,7 +12,7 @@ import praw
 import praw.helpers
 import signal
 import psycopg2
-from utils import log, Color, retrieve_vine_video_url, gfycat_convert
+from utils import log, Color, retrieve_vine_video_url, gfycat_convert, get_id, mediacrush_convert, get_gfycat_info
 
 __author__ = 'Henri Sweers'
 
@@ -53,10 +53,8 @@ class MirroredObject():
             s += "\n"
         if self.gfycat_url:
             gfy_id = get_id(self.gfycat_url)
-            s += "* [Gfycat](%s) | ([mp4](%s)) ([webm](%s)) ([gif](%s))" % (self.gfycat_url,
-                                                                            self.gfycat_mp4(gfy_id),
-                                                                            self.gfycat_webm(gfy_id),
-                                                                            self.gfycat_gif(gfy_id))
+            urls = self.gfycat_urls(gfy_id)
+            s += "* [Gfycat](%s) | ([mp4](%s)) ([webm](%s)) ([gif](%s))" % (self.gfycat_url, urls[0], urls[1], urls[2])
             s += "\n"
         if self.mediacrush_url:
             mc_id = get_id(self.mediacrush_url)
@@ -75,14 +73,9 @@ class MirroredObject():
     def to_json(self):
         return json.dumps(self.__dict__)
 
-    def gfycat_webm(self, gfy_id):
-        return "http://zippy.gfycat.com/%s.webm" % gfy_id
-
-    def gfycat_mp4(self, gfy_id):
-        return "http://fat.gfycat.com/%s.mp4" % gfy_id
-
-    def gfycat_gif(self, gfy_id):
-        return "http://giant.gfycat.com/%s.gif" % gfy_id
+    def gfycat_urls(self, gfy_id):
+        info = get_gfycat_info(gfy_id)
+        return info['mp4Url'], info['webmUrl'], info['gifUrl']
 
     def mc_url(self, media_type, mc_id):
         return "https://cdn.mediacru.sh/%s.%s" % (mc_id, media_type)
@@ -185,16 +178,11 @@ def previously_commented(submission):
 # Validates if a submission should be posted
 def submission_is_valid(submission):
     # check domain/extension validity, caches, and if previously commented
-    if (submission.domain in allowedDomains and not extension(submission.url) in disabled_extensions) or extension(
-            submission.url) in allowed_extensions:
+    if (submission.domain in allowedDomains and extension(submission.url) not in disabled_extensions) \
+            or extension(submission.url) in allowed_extensions:
         # Check for submission id and url
         return not (check_cache(submission.id) or check_cache(submission.url) or previously_commented(submission))
     return False
-
-
-# Gets the id of a video assuming it's of the "website.com/<id>" type
-def get_id(url_to_get):
-    return url_to_get.split('/')[-1]
 
 
 # Process a gif post
@@ -205,17 +193,28 @@ def process_submission(submission):
     if submission.domain == "vine.co":
         url_to_process = retrieve_vine_video_url(url_to_process)
     elif submission.domain == "gfycat.com":
+        already_gfycat = True
         new_mirror.gfycat_url = url_to_process
-        url_to_process = "http://www.fat.gfycat.com/%s.mp4" % get_id(url_to_process)
+        url_to_process = get_gfycat_info(get_id(url_to_process))['mp4Url']
+    elif submission.domain == "mediacru.sh":
+        new_mirror.mediacrush_url = url_to_process
+        url_to_process = "https://cdn.mediacru.sh/%s.mp4" % get_id(url_to_process)
 
-    # if submission.domain == "giant.gfycat.com":
-    #     # Just get the gfycat url
-    #     url_to_process = url_to_process.replace("giant.", "")
-    #     new_mirror.gfycat_url = url_to_process
-    #     already_gfycat = True
-    #
-    # if not already_gfycat:
-    #     new_mirror.gfycat_url = gfycat_convert(url_to_process)
+    if submission.domain == "giant.gfycat.com":
+        # Just get the gfycat url
+        url_to_process = url_to_process.replace("giant.", "")
+        new_mirror.gfycat_url = url_to_process
+        already_gfycat = True
+
+    # Get converting
+    log("--Beginning conversion, url to convert is " + url_to_process)
+    if not already_gfycat:
+        new_mirror.gfycat_url = gfycat_convert(url_to_process)
+        log("--Gfy url is " + new_mirror.mediacrush_url)
+
+    if submission.domain != "mediacru.sh":
+        new_mirror.mediacrush_url = mediacrush_convert(url_to_process)
+        log("--MC url is " + new_mirror.mediacrush_url)
 
 
 # Main bot runner
@@ -318,7 +317,6 @@ if __name__ == "__main__":
         "giant.gfycat.com",
         "mediacru.sh",
         "fitbamob.com",
-        "imgur.com",
         "i.imgur.com"]
 
     allowed_extensions = [".gif"]
