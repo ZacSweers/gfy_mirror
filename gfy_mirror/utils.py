@@ -97,7 +97,7 @@ def imgur_upload(title, url_to_process):
 
     headers = {"Authorization": "Client-ID c4f5de959205bb4",
                'Content-type': 'application/json',
-                'Accept': 'application/json'}
+               'Accept': 'application/json'}
 
     req_data = {
         'image': url_to_process,
@@ -120,6 +120,7 @@ def imgur_upload(title, url_to_process):
     else:
         print "error"
 
+
 # Returns the .mp4 url of a vine video
 def retrieve_vine_video_url(vine_url):
     log('--Retrieving vine url')
@@ -137,6 +138,8 @@ def gen_random_string():
 
 # Gets the id of a video assuming it's of the "website.com/<id>" type
 def get_id(url_to_get):
+    if url_to_get[-1] == '/':
+        url_to_get = url_to_get[:-1]
     return url_to_get.split('/')[-1]
 
 
