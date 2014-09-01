@@ -2,6 +2,7 @@
 import atexit
 import getopt
 import json
+import logging
 import os
 import pickle
 import sys
@@ -12,7 +13,8 @@ import praw
 import praw.helpers
 import signal
 import psycopg2
-from utils import log, Color, retrieve_vine_video_url, gfycat_convert, get_id, mediacrush_convert, get_gfycat_info
+from utils import log, Color, retrieve_vine_video_url, gfycat_convert, get_id, mediacrush_convert, get_gfycat_info, \
+    fitbamob_convert
 
 __author__ = 'Henri Sweers'
 
@@ -31,6 +33,17 @@ dry_run = False
 # Bot name
 bot_name = "gfy_mirror"
 
+# Comment string
+comment_intro = """
+Mirrored gfy links:
+------
+"""
+
+comment_info = """\n\n------
+[^Source ^Code](https://github.com/hzsweers/TODO) ^|
+[^Feedback/Bugs?](http://www.reddit.com/message/compose?to=pandanomic) ^| ^By ^/u/pandanomic
+"""
+
 
 class MirroredObject():
     op_id = None
@@ -47,27 +60,33 @@ class MirroredObject():
             self.original_url = original_url
 
     def comment_string(self):
-        s = "\n\n"
+        s = "\n"
         if self.original_url:
-            s += "* [Original](%s)" % self.gfycat_url
-            s += "\n"
+            if "vine.co" in self.original_url:
+                s += "*NOTE: The original url was a Vine, which has audio. The below links do not.*\n\n"
+            s += "* [Original](%s)" % self.original_url
+            s += "\n\n"
         if self.gfycat_url:
             gfy_id = get_id(self.gfycat_url)
             urls = self.gfycat_urls(gfy_id)
-            s += "* [Gfycat](%s) | ([mp4](%s)) ([webm](%s)) ([gif](%s))" % (self.gfycat_url, urls[0], urls[1], urls[2])
-            s += "\n"
+            s += "* [Gfycat](%s) | [mp4](%s) - [webm](%s) - [gif](%s)" % (
+                self.gfycat_url, urls[0], urls[1], urls[2])
+            s += "\n\n"
         if self.mediacrush_url:
             mc_id = get_id(self.mediacrush_url)
-            s += "* [Mediacrush](%s) | ([mp4](%s)) ([webm](%s)) ([gif](%s)) ([ogg](%s))" % (self.mediacrush_url,
-                                                                                            self.mc_url("mp4", mc_id),
-                                                                                            self.mc_url("webm", mc_id),
-                                                                                            self.mc_url("gif", mc_id),
-                                                                                            self.mc_url("ogv", mc_id))
-            s += "\n"
+            s += "* [Mediacrush](%s) | [mp4](%s) - [webm](%s) - [gif](%s) - [ogg](%s)" % (self.mediacrush_url,
+                                                                                                  self.mc_url("mp4",
+                                                                                                              mc_id),
+                                                                                                  self.mc_url("webm",
+                                                                                                              mc_id),
+                                                                                                  self.mc_url("gif",
+                                                                                                              mc_id),
+                                                                                                  self.mc_url("ogv",
+                                                                                                              mc_id))
+            s += "\n\n"
         if self.fitbamob_url:
             s += "* [Fitbamob](%s)" % self.fitbamob_url
             s += "\n"
-        s += "\n\n"
         return s
 
     def to_json(self):
@@ -117,11 +136,11 @@ def check_cache(input_key):
 
 # Cache a key (original url, gfy url, or submission id)
 def cache_key(input_key):
-    # if running_on_heroku:
-    # mc.set(str(input_key), "True")
-    #     assert str(mc.get(str(input_key))) == "True"
-    # else:
-    #     already_done.append(input_key)
+    if running_on_heroku:
+        mc.set(str(input_key), "True")
+        assert str(mc.get(str(input_key))) == "True"
+    else:
+        already_done.append(input_key)
 
     log('--Cached ' + str(input_key), Color.GREEN)
 
@@ -210,11 +229,34 @@ def process_submission(submission):
     log("--Beginning conversion, url to convert is " + url_to_process)
     if not already_gfycat:
         new_mirror.gfycat_url = gfycat_convert(url_to_process)
-        log("--Gfy url is " + new_mirror.mediacrush_url)
+        log("--Gfy url is " + new_mirror.gfycat_url)
 
     if submission.domain != "mediacru.sh":
         new_mirror.mediacrush_url = mediacrush_convert(url_to_process)
         log("--MC url is " + new_mirror.mediacrush_url)
+
+    if submission.domain != "fitbamob.com":
+        new_mirror.fitbamob_url = fitbamob_convert(submission.title, url_to_process)
+        log("--Fitbamob url is " + new_mirror.fitbamob_url)
+
+    comment_string = comment_intro + new_mirror.comment_string() + comment_info
+    log("--Done converting, here's the new comment: \n\n" + comment_string)
+
+    add_comment(submission, comment_string)
+    cache_key(str(submission.id))
+    cache_key(str(submission.url))
+
+
+# Add the comment with info
+def add_comment(submission, comment_string):
+    log("--Adding comment", Color.BLUE)
+    try:
+        submission.add_comment(comment_string)
+    except praw.errors.RateLimitExceeded:
+        log("--Rate Limit Exceeded", Color.RED)
+    except praw.errors.APIException:
+        log('--API exception', Color.RED)
+        logging.exception("Error on followupComment")
 
 
 # Main bot runner
@@ -259,9 +301,9 @@ if __name__ == "__main__":
         #
         # conn = psycopg2.connect(
         # database=url.path[1:],
-        #     user=url.username,
-        #     password=url.password,
-        #     host=url.hostname,
+        # user=url.username,
+        # password=url.password,
+        # host=url.hostname,
         #     port=url.port
         # )
 

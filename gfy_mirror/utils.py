@@ -60,6 +60,7 @@ def mediacrush_convert(url_to_convert):
     # Convert
     media = Media()
     response = media.upload(str(url_to_convert))
+    log('----success', Color.GREEN)
     return "https://mediacru.sh/%s" % response.hash
 
 
@@ -86,7 +87,8 @@ def fitbamob_convert(title, url_to_convert):
     else:
         upload_id = r.json()['id']
         canonical_url = r.json()['canonical_url']
-        log('----Started conversion of gif, video will be available under ' + canonical_url, Color.BLUE)
+        log('----Started conversion of gif, video will be available under ' + canonical_url, Color.GREEN)
+        log('----success', Color.GREEN)
         return canonical_url
 
 
