@@ -14,7 +14,7 @@ import praw.helpers
 import signal
 import psycopg2
 from utils import log, Color, retrieve_vine_video_url, gfycat_convert, get_id, mediacrush_convert, get_gfycat_info, \
-    fitbamob_convert, imgur_upload
+    fitbamob_convert, imgur_upload, get_fitbamob_info
 
 __author__ = 'Henri Sweers'
 
@@ -83,7 +83,10 @@ class MirroredObject():
             s += " - [ogg](%s)" % self.mc_url("ogv", mc_id)
             s += "\n\n"
         if self.fitbamob_url:
-            s += "* [Fitbamob](%s)" % self.fitbamob_url
+            fit_id = get_id(self.fitbamob_url)
+            urls = self.fitbamob_urls(fit_id)
+            s += "* [Fitbamob](%s) | [mp4](%s) - [webm](%s) - [gif](%s)" % (
+                self.fitbamob_url, urls[0], urls[1], urls[2])
             s += "\n\n"
         if self.imgur_url:
             s += "* [Imgur](%s) (gif only)" % self.imgur_url
@@ -96,6 +99,10 @@ class MirroredObject():
     def gfycat_urls(self, gfy_id):
         info = get_gfycat_info(gfy_id)
         return info['mp4Url'], info['webmUrl'], info['gifUrl']
+
+    def fitbamob_urls(self, fit_id):
+        info = get_fitbamob_info(fit_id)
+        return info['mp4_url'], info['webm_url'], info['gif_url']
 
     def mc_url(self, media_type, mc_id):
         return "https://cdn.mediacru.sh/%s.%s" % (mc_id, media_type)
@@ -208,9 +215,12 @@ def submission_is_valid(submission):
 # Process a gif post
 def process_submission(submission):
     new_mirror = MirroredObject(submission.id, submission.url)
+
     already_gfycat = False
     already_imgur = False
+
     url_to_process = submission.url
+
     if submission.domain == "vine.co":
         url_to_process = retrieve_vine_video_url(url_to_process)
     elif submission.domain == "gfycat.com":
@@ -220,6 +230,9 @@ def process_submission(submission):
     elif submission.domain == "mediacru.sh":
         new_mirror.mediacrush_url = url_to_process
         url_to_process = "https://cdn.mediacru.sh/%s.mp4" % get_id(url_to_process)
+    elif submission.domain == "fitbamob.com":
+        new_mirror.fitbamob_url = url_to_process
+        url_to_process = get_fitbamob_info(get_id(url_to_process))['mp4_url']
 
     if submission.domain == "giant.gfycat.com":
         # Just get the gfycat url
@@ -227,11 +240,12 @@ def process_submission(submission):
         new_mirror.gfycat_url = url_to_process
         already_gfycat = True
 
-    # Get converting
-    log("--Beginning conversion, url to convert is " + url_to_process)
     if submission.domain == "imgur.com" and extension(url_to_process) == ".gif":
         new_mirror.imgur_url = url_to_process
         already_imgur = True
+
+    # Get converting
+    log("--Beginning conversion, url to convert is " + url_to_process)
     if not already_gfycat:
         new_mirror.gfycat_url = gfycat_convert(url_to_process)
         log("--Gfy url is " + new_mirror.gfycat_url)

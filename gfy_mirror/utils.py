@@ -92,6 +92,13 @@ def fitbamob_convert(title, url_to_convert):
         return canonical_url
 
 
+def get_fitbamob_info(f_id):
+    req_url = "http://fitbamob.com/link/%s" % f_id
+    r = requests.get(req_url)
+    data = r.json()
+    return data
+
+
 def imgur_upload(title, url_to_process):
     log('--Uploading to imgur')
 
