@@ -14,7 +14,7 @@ import praw.helpers
 import signal
 import psycopg2
 from utils import log, Color, retrieve_vine_video_url, gfycat_convert, get_id, mediacrush_convert, get_gfycat_info, \
-    fitbamob_convert
+    fitbamob_convert, imgur_upload
 
 __author__ = 'Henri Sweers'
 
@@ -51,6 +51,7 @@ class MirroredObject():
     gfycat_url = None
     mediacrush_url = None
     fitbamob_url = None
+    imgur_url = None
 
     def __init__(self, op_id, original_url, json_data=None):
         if json_data:
@@ -83,6 +84,9 @@ class MirroredObject():
             s += "\n\n"
         if self.fitbamob_url:
             s += "* [Fitbamob](%s)" % self.fitbamob_url
+            s += "\n\n"
+        if self.imgur_url:
+            s += "* [Imgur](%s) (gif only)" % self.imgur_url
             s += "\n"
         return s
 
@@ -205,6 +209,7 @@ def submission_is_valid(submission):
 def process_submission(submission):
     new_mirror = MirroredObject(submission.id, submission.url)
     already_gfycat = False
+    already_imgur = False
     url_to_process = submission.url
     if submission.domain == "vine.co":
         url_to_process = retrieve_vine_video_url(url_to_process)
@@ -224,17 +229,26 @@ def process_submission(submission):
 
     # Get converting
     log("--Beginning conversion, url to convert is " + url_to_process)
+    if submission.domain == "imgur.com" and extension(url_to_process) == ".gif":
+        new_mirror.imgur_url = url_to_process
+        already_imgur = True
     if not already_gfycat:
         new_mirror.gfycat_url = gfycat_convert(url_to_process)
         log("--Gfy url is " + new_mirror.gfycat_url)
 
     if submission.domain != "mediacru.sh":
+        # TODO check file size limit (50 mb)
         new_mirror.mediacrush_url = mediacrush_convert(url_to_process)
         log("--MC url is " + new_mirror.mediacrush_url)
 
     if submission.domain != "fitbamob.com":
         new_mirror.fitbamob_url = fitbamob_convert(submission.title, url_to_process)
         log("--Fitbamob url is " + new_mirror.fitbamob_url)
+
+    if not already_imgur:
+        # TODO need to check 10mb file size limit
+        new_mirror.imgur_url = imgur_upload(submission.title, url_to_process)
+        log("--Imgur url is " + new_mirror.imgur_url)
 
     comment_string = comment_intro + new_mirror.comment_string() + comment_info
     log("--Done converting, here's the new comment: \n\n" + comment_string)

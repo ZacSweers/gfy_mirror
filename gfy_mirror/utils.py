@@ -92,6 +92,34 @@ def fitbamob_convert(title, url_to_convert):
         return canonical_url
 
 
+def imgur_upload(title, url_to_process):
+    log('--Uploading to imgur')
+
+    headers = {"Authorization": "Client-ID c4f5de959205bb4",
+               'Content-type': 'application/json',
+                'Accept': 'application/json'}
+
+    req_data = {
+        'image': url_to_process,
+        'title': title,
+        'type': 'URL'
+    }
+
+    r = requests.post(
+        'https://api.imgur.com/3/upload',
+        data=json.dumps(req_data),
+        headers=headers
+    )
+
+    assert r.status_code == 200
+    jdata = r.json()
+    if jdata['success']:
+        link = jdata['data']['link']
+        print 'link is ' + link
+        return link
+    else:
+        print "error"
+
 # Returns the .mp4 url of a vine video
 def retrieve_vine_video_url(vine_url):
     log('--Retrieving vine url')
