@@ -134,7 +134,7 @@ def submission_is_valid(submission):
 
 # Process a gif post
 def process_submission(submission):
-
+    pass
 
 
 # Main bot runner
