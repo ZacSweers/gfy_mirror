@@ -259,10 +259,11 @@ def process_submission(submission):
         new_mirror.fitbamob_url = fitbamob_convert(submission.title, url_to_process)
         log("--Fitbamob url is " + new_mirror.fitbamob_url)
 
-    if not already_imgur:
-        # TODO need to check 10mb file size limit
-        new_mirror.imgur_url = imgur_upload(submission.title, url_to_process)
-        log("--Imgur url is " + new_mirror.imgur_url)
+    # TODO Re-enable this once "animated = false" issue resolved
+    # if not already_imgur:
+    #     # TODO need to check 10mb file size limit
+    #     new_mirror.imgur_url = imgur_upload(submission.title, url_to_process)
+    #     log("--Imgur url is " + new_mirror.imgur_url)
 
     comment_string = comment_intro + new_mirror.comment_string() + comment_info
     log("--Done converting, here's the new comment: \n\n" + comment_string)
