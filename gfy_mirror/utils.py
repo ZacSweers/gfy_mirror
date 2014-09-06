@@ -4,6 +4,8 @@ import string
 import urllib
 from pyquery import pyquery
 import requests
+import sys
+import subprocess
 from pycrush import Media
 
 __author__ = 'Henri Sweers'
@@ -24,6 +26,18 @@ class Color:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
     END = '\033[0m'
+
+
+# If you're on mac, install terminal-notifier ("brew install terminal-notifier")
+#   to get nifty notifications when it's done
+def notify_mac(message):
+    if sys.platform == "darwin":
+        try:
+            subprocess.call(
+                ["terminal-notifier", "-message", message, "-title", "FB_Bot",
+                 "-sound", "default"])
+        except OSError:
+            print "If you have terminal-notifier, this would be a notification"
 
 
 # Log method. If there's a color argument, it'll stick that in first

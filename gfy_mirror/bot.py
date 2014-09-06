@@ -14,7 +14,7 @@ import praw.helpers
 import signal
 import psycopg2
 from utils import log, Color, retrieve_vine_video_url, gfycat_convert, get_id, mediacrush_convert, get_gfycat_info, \
-    fitbamob_convert, imgur_upload, get_fitbamob_info
+    fitbamob_convert, imgur_upload, get_fitbamob_info, notify_mac
 
 __author__ = 'Henri Sweers'
 
@@ -29,6 +29,9 @@ running_on_heroku = False
 
 # Dry runs
 dry_run = False
+
+# Notify on mac
+notify = False
 
 # Bot name
 bot_name = "gfy_mirror"
@@ -347,7 +350,7 @@ if __name__ == "__main__":
             if o in ("-d", "--dry"):
                 dry_run = True
             elif o in ("-n", "--notify"):
-                notify_mac = True
+                notify = True
             elif o in ("-f", "--flushvalid"):
                 response = raw_input("Are you sure? Y/N")
                 if response.lower() == 'y':
@@ -421,4 +424,6 @@ if __name__ == "__main__":
             bot()
             counter += 1
             log('Looped - ' + str(counter), Color.BOLD)
+            if notify:
+                notify_mac("Looped")
             time.sleep(60)
