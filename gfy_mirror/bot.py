@@ -66,14 +66,15 @@ class MirroredObject():
             if "vine.co" in self.original_url:
                 s += "*NOTE: The original url was a Vine, which has audio. Gfycat removes audio, but the others should be fine*\n\n"
             s += "* [Original](%s)" % self.original_url
-            s += "\n\n"
         if self.gfycat_url:
             gfy_id = get_id(self.gfycat_url)
             urls = self.gfycat_urls(gfy_id)
+            s += "\n\n"
             s += "* [Gfycat](%s) | [mp4](%s) - [webm](%s) - [gif](%s)" % (
                 self.gfycat_url, urls[0], urls[1], urls[2])
             s += "\n\n"
         if self.mediacrush_url:
+            s += "\n\n"
             mc_id = get_id(self.mediacrush_url)
             s += "* [Mediacrush](%s) | " % self.mediacrush_url
             s += "[mp4](%s)" % self.mc_url("mp4", mc_id)
@@ -81,16 +82,16 @@ class MirroredObject():
             if "gfycat" not in self.original_url:
                 s += " - [gif](%s)" % self.mc_url("gif", mc_id)
             s += " - [ogg](%s)" % self.mc_url("ogv", mc_id)
-            s += "\n\n"
         if self.fitbamob_url:
+            s += "\n\n"
             fit_id = get_id(self.fitbamob_url)
             urls = self.fitbamob_urls(fit_id)
             s += "* [Fitbamob](%s) | [mp4](%s) - [webm](%s) - [gif](%s)" % (
                 self.fitbamob_url, urls[0], urls[1], urls[2])
-            s += "\n\n"
         if self.imgur_url:
+            s += "\n\n"
             s += "* [Imgur](%s) (gif only)" % self.imgur_url
-            s += "\n"
+        s += "\n"
         return s
 
     def to_json(self):
