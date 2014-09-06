@@ -86,6 +86,7 @@ class MirroredObject():
         if self.fitbamob_url:
             s += "\n\n"
             s += "* [Fitbamob](%s)" % self.fitbamob_url
+            # TODO Re-enable this when possible
             # fit_id = get_id(self.fitbamob_url)
             # urls = self.fitbamob_urls(fit_id)
             # s += "* [Fitbamob](%s) | [mp4](%s) - [webm](%s) - [gif](%s)" % (
@@ -196,6 +197,7 @@ def previously_commented(submission):
     for comment in flat_comments:
         try:
             if comment.author.name == bot_name:
+                log("----Previously commented, caching", Color.RED)
                 cache_key(submission.id)
                 cache_key(submission.url)
                 return True
