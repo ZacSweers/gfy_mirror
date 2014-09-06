@@ -72,7 +72,6 @@ class MirroredObject():
             s += "\n\n"
             s += "* [Gfycat](%s) | [mp4](%s) - [webm](%s) - [gif](%s)" % (
                 self.gfycat_url, urls[0], urls[1], urls[2])
-            s += "\n\n"
         if self.mediacrush_url:
             s += "\n\n"
             mc_id = get_id(self.mediacrush_url)
