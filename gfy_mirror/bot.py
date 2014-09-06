@@ -33,7 +33,7 @@ dry_run = False
 # Bot name
 bot_name = "gfy_mirror"
 
-# Comment string
+# Comment strings
 comment_intro = """
 Mirrored links
 ------
@@ -43,6 +43,8 @@ comment_info = """\n\n------
 [^Source ^Code](https://github.com/hzsweers/gfy_mirror) ^|
 [^Feedback/Bugs?](http://www.reddit.com/message/compose?to=pandanomic&subject=gfymirror) ^| ^By ^/[u/pandanomic](http://reddit.com/u/pandanomic)
 """
+
+vine_warning = "*NOTE: The original url was a Vine, which has audio. Gfycat removes audio, but the others should be fine*\n\n"
 
 
 class MirroredObject():
@@ -64,7 +66,7 @@ class MirroredObject():
         s = "\n"
         if self.original_url:
             if "vine.co" in self.original_url:
-                s += "*NOTE: The original url was a Vine, which has audio. Gfycat removes audio, but the others should be fine*\n\n"
+                s += vine_warning
             s += "* [Original](%s)" % self.original_url
         if self.gfycat_url:
             gfy_id = get_id(self.gfycat_url)
@@ -261,7 +263,7 @@ def process_submission(submission):
 
     # TODO Re-enable this once "animated = false" issue resolved
     # if not already_imgur:
-    #     # TODO need to check 10mb file size limit
+    # # TODO need to check 10mb file size limit
     #     new_mirror.imgur_url = imgur_upload(submission.title, url_to_process)
     #     log("--Imgur url is " + new_mirror.imgur_url)
 
