@@ -278,6 +278,12 @@ def process_submission(submission):
 # Add the comment with info
 def add_comment(submission, comment_string):
     log("--Adding comment", Color.BLUE)
+
+    if dry_run:
+        log("--Dry run, comment below", Color.BLUE)
+        log(comment_string, Color.GREEN)
+        return
+
     try:
         submission.add_comment(comment_string)
     except praw.errors.RateLimitExceeded:
@@ -296,9 +302,10 @@ def bot():
             new_count += 1
             log("New Post - " + submission.url, Color.GREEN)
             process_submission(submission)
+            if dry_run:
+                sys.exit("Done")
         else:
-            pass
-            # cache_key(submission.id)
+            cache_key(submission.id)
 
     if new_count == 0:
         log("Nothing new", Color.BLUE)
@@ -340,7 +347,7 @@ if __name__ == "__main__":
             if o in ("-d", "--dry"):
                 dry_run = True
             elif o in ("-n", "--notify"):
-                dry_run = True
+                notify_mac = True
             elif o in ("-f", "--flushvalid"):
                 response = raw_input("Are you sure? Y/N")
                 if response.lower() == 'y':
@@ -357,7 +364,6 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)
 
     log("Starting Bot", Color.BOLD)
-
     log("OS is " + sys.platform, Color.BOLD)
 
     # For logging purposes
