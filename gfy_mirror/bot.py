@@ -86,9 +86,10 @@ class MirroredObject():
         if self.fitbamob_url:
             s += "\n\n"
             fit_id = get_id(self.fitbamob_url)
-            urls = self.fitbamob_urls(fit_id)
-            s += "* [Fitbamob](%s) | [mp4](%s) - [webm](%s) - [gif](%s)" % (
-                self.fitbamob_url, urls[0], urls[1], urls[2])
+            s += "* [Fitbamob](%s)" % self.fitbamob_url
+            # urls = self.fitbamob_urls(fit_id)
+            # s += "* [Fitbamob](%s) | [mp4](%s) - [webm](%s) - [gif](%s)" % (
+            #     self.fitbamob_url, urls[0], urls[1], urls[2])
         if self.imgur_url:
             s += "\n\n"
             s += "* [Imgur](%s) (gif only)" % self.imgur_url
