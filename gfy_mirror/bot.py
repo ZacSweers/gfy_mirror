@@ -199,7 +199,6 @@ def previously_commented(submission):
             if comment.author.name == bot_name:
                 log("----Previously commented, caching", Color.RED)
                 cache_key(submission.id)
-                cache_key(submission.url)
                 return True
         except:
             return False
@@ -271,8 +270,6 @@ def process_submission(submission):
     #     log("--Imgur url is " + new_mirror.imgur_url)
 
     comment_string = comment_intro + new_mirror.comment_string() + comment_info
-    log("--Done converting, here's the new comment: \n\n" + comment_string)
-
     add_comment(submission, comment_string)
     cache_key(str(submission.id))
     cache_key(str(submission.url))
