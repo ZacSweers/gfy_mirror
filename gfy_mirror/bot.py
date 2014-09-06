@@ -85,8 +85,8 @@ class MirroredObject():
             s += " - [ogg](%s)" % self.mc_url("ogv", mc_id)
         if self.fitbamob_url:
             s += "\n\n"
-            fit_id = get_id(self.fitbamob_url)
             s += "* [Fitbamob](%s)" % self.fitbamob_url
+            # fit_id = get_id(self.fitbamob_url)
             # urls = self.fitbamob_urls(fit_id)
             # s += "* [Fitbamob](%s) | [mp4](%s) - [webm](%s) - [gif](%s)" % (
             #     self.fitbamob_url, urls[0], urls[1], urls[2])
