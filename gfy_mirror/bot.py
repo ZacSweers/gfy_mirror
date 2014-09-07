@@ -36,6 +36,20 @@ notify = False
 # Bot name
 bot_name = "gfy_mirror"
 
+# Already processed posts
+already_done = set()
+
+allowedDomains = [
+        "gfycat.com",
+        "vine.co",
+        "giant.gfycat.com",
+        "mediacru.sh",
+        "fitbamob.com",
+        "i.imgur.com"]
+
+allowed_extensions = [".gif"]
+disabled_extensions = [".jpg", ".jpeg", ".png"]
+
 # Comment strings
 comment_intro = """
 Mirrored links
@@ -133,6 +147,21 @@ def exit_bot():
     sys.exit()
 
 
+def load_caches():
+    # Set with previously linked posts
+    # Check the db cache first
+    log("Loading cache", Color.BOLD)
+    global already_done
+    if running_on_heroku:
+        already_done = mc.get(cache_file)
+    else:
+        if os.path.isfile(cache_file):
+            with open(cache_file, 'r+') as db_file_load:
+                already_done = pickle.load(db_file_load)
+
+    log('--Cache size: ' + str(len(already_done)))
+
+
 # Check cache for string
 def check_key_exists(cache, key):
     return key in cache
@@ -149,7 +178,6 @@ def cache_key(cache, key, data=None):
             cache.append(key)
 
         log('--Cached ' + str(key), Color.GREEN)
-
 
 
 # Store cache
@@ -376,8 +404,8 @@ if __name__ == "__main__":
     log("OS is " + sys.platform, Color.BOLD)
 
     # For logging purposes
-    log("CURRENT CST TIMESTAMP: " + datetime.datetime.fromtimestamp(
-        time.time() - 21600).strftime('%Y-%m-%d %H:%M:%S'), Color.BOLD)
+    log("CURRENT PST TIMESTAMP: " + datetime.datetime.fromtimestamp(
+        time.time() - 28800).strftime('%Y-%m-%d %H:%M:%S'), Color.BOLD)
 
     args = sys.argv
     loginType = "propFile"
@@ -396,28 +424,7 @@ if __name__ == "__main__":
     # read off /r/soccer
     soccer_subreddit = r.get_subreddit('soccer')
 
-    allowedDomains = [
-        "gfycat.com",
-        "vine.co",
-        "giant.gfycat.com",
-        "mediacru.sh",
-        "fitbamob.com",
-        "i.imgur.com"]
-
-    allowed_extensions = [".gif"]
-    disabled_extensions = [".jpg", ".jpeg", ".png"]
-
-    # Array with previously linked posts
-    # Check the db cache first
-    already_done = set()
-    if not running_on_heroku:
-        log("Loading cache", Color.BOLD)
-        if os.path.isfile(cache_file):
-            with open(cache_file, 'r+') as db_file_load:
-                already_done = pickle.load(db_file_load)
-
-        log('--Cache size: ' + str(len(already_done)))
-
+    load_caches()
     counter = 0
 
     if running_on_heroku:
