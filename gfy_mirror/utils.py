@@ -95,7 +95,7 @@ def fitbamob_convert(title, url_to_convert):
         }
     )
     if r.status_code != 200:
-        log('----Error uploading gif: Status code ' + r.status_code)
+        log('----Error uploading gif: Status code ' + str(r.status_code))
         return None
     error_text = r.json().get('error')
     if error_text:
