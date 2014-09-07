@@ -171,6 +171,10 @@ def check_key_exists(cache, key):
 
 # Cache a key (original url, gfy url, or submission id)
 def cache_key(cache, key, data=None):
+
+    if dry_run:
+        return
+
     if data:
         cache[key] = data
     elif key not in cache:
@@ -310,10 +314,8 @@ def process_submission(submission):
 
     comment_string = comment_intro + new_mirror.comment_string() + comment_info
     add_comment(submission, comment_string)
-
-    if not dry_run:
-        cache_key(already_done, str(submission.id))
-        cache_key(already_done, str(submission.url))
+    cache_key(already_done, str(submission.id))
+    cache_key(already_done, str(submission.url))
 
 
 # Add the comment with info
