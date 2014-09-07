@@ -14,7 +14,7 @@ import praw.helpers
 import signal
 import psycopg2
 from utils import log, Color, retrieve_vine_video_url, gfycat_convert, get_id, mediacrush_convert, get_gfycat_info, \
-    fitbamob_convert, imgur_upload, get_fitbamob_info, notify_mac
+    fitbamob_convert, imgur_upload, get_fitbamob_info, notify_mac, retrieve_vine_cdn_url
 
 __author__ = 'Henri Sweers'
 
@@ -45,9 +45,10 @@ allowedDomains = [
         "giant.gfycat.com",
         "mediacru.sh",
         "fitbamob.com",
-        "i.imgur.com"]
+        "i.imgur.com",
+        "v.cdn.vine.co"]
 
-allowed_extensions = [".gif"]
+allowed_extensions = [".gif", ".mp4"]
 disabled_extensions = [".jpg", ".jpeg", ".png"]
 
 # Comment strings
@@ -276,6 +277,8 @@ def process_submission(submission):
 
     if submission.domain == "vine.co":
         url_to_process = retrieve_vine_video_url(url_to_process)
+    elif submission.domain == "v.cdn.vine.co":
+        url_to_process = retrieve_vine_cdn_url(url_to_process)
     elif submission.domain == "gfycat.com":
         already_gfycat = True
         new_mirror.gfycat_url = url_to_process

@@ -155,6 +155,13 @@ def retrieve_vine_video_url(vine_url):
     return video_url
 
 
+def retrieve_vine_cdn_url(cdn_url):
+    idx = cdn_url.find('.mp4')
+    idx += 4
+    s = cdn_url[0:idx]
+    return s
+
+
 # Generate a random 10 letter string
 # Borrowed from here: http://stackoverflow.com/a/16962716/3034339
 def gen_random_string():
