@@ -159,6 +159,8 @@ def load_caches():
             with open(cache_file, 'r+') as db_file_load:
                 already_done = pickle.load(db_file_load)
 
+    if not already_done:
+        already_done = set()
     log('--Cache size: ' + str(len(already_done)))
 
 
