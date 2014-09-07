@@ -302,7 +302,7 @@ def process_submission(submission):
     if not already_gfycat:
         gfy_url = gfycat_convert(url_to_process)
         if gfy_url:
-            new_mirror.gfycat_url = gfycat_convert(url_to_process)
+            new_mirror.gfycat_url = gfy_url
             log("--Gfy url is " + new_mirror.gfycat_url)
         else:
             log('--Gif is not animated!')
@@ -315,8 +315,10 @@ def process_submission(submission):
         log("--MC url is " + new_mirror.mediacrush_url)
 
     if submission.domain != "fitbamob.com":
-        new_mirror.fitbamob_url = fitbamob_convert(submission.title, url_to_process)
-        log("--Fitbamob url is " + new_mirror.fitbamob_url)
+        fitba_url = fitbamob_convert(submission.title, url_to_process)
+        if fitba_url:
+            new_mirror.fitbamob_url = fitba_url
+            log("--Fitbamob url is " + new_mirror.fitbamob_url)
 
     # TODO Re-enable this once "animated = false" issue resolved
     # if not already_imgur:
