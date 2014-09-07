@@ -310,8 +310,10 @@ def process_submission(submission):
 
     comment_string = comment_intro + new_mirror.comment_string() + comment_info
     add_comment(submission, comment_string)
-    cache_key(already_done, str(submission.id))
-    cache_key(already_done, str(submission.url))
+
+    if not dry_run:
+        cache_key(already_done, str(submission.id))
+        cache_key(already_done, str(submission.url))
 
 
 # Add the comment with info
