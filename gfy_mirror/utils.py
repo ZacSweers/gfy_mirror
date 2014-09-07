@@ -60,7 +60,8 @@ def gfycat_convert(url_to_convert):
     if conversion_response.status_code == 200:
         log('----success', Color.GREEN)
         j = conversion_response.json()
-        if j['error']:
+        if 'error' in j.keys():
+            log('----Error: ' + j['error'], Color.RED)
             return None
         gfyname = j["gfyname"]
         return "http://gfycat.com/" + gfyname
@@ -95,12 +96,11 @@ def fitbamob_convert(title, url_to_convert):
         }
     )
     if r.status_code != 200:
-        log('----Error uploading gif: Status code ' + str(r.status_code))
+        log('----Error uploading gif: Status code ' + str(r.status_code), Color.RED)
         return None
     error_text = r.json().get('error')
     if error_text:
         log('----Error uploading gif: ' + error_text, Color.RED)
-        print('Error uploading gif: ' + error_text)
         return None
     else:
         upload_id = r.json()['id']
