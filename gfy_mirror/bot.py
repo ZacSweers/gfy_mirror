@@ -155,7 +155,7 @@ def cache_key(input_key):
         mc.set(str(input_key), "True")
         assert str(mc.get(str(input_key))) == "True"
     else:
-        already_done.append(input_key)
+        already_done.add(input_key)
 
     log('--Cached ' + str(input_key), Color.GREEN)
 
@@ -212,10 +212,17 @@ def previously_commented(submission):
 # Validates if a submission should be posted
 def submission_is_valid(submission):
     # check domain/extension validity, caches, and if previously commented
-    if (submission.domain in allowedDomains and extension(submission.url) not in disabled_extensions) \
-            or extension(submission.url) in allowed_extensions:
+    ext = extension(submission.url)
+    if (submission.domain in allowedDomains and ext not in disabled_extensions) \
+            or ext in allowed_extensions:
         # Check for submission id and url
-        return not (check_cache(submission.id) or check_cache(submission.url) or previously_commented(submission))
+        if check_cache(submission.id) or check_cache(submission.url):
+            return False
+        elif previously_commented(submission):
+            return False
+        else:
+            return True
+        # return not (check_cache(submission.id) or check_cache(submission.url) or previously_commented(submission))
     return False
 
 
@@ -403,12 +410,11 @@ if __name__ == "__main__":
 
     # Array with previously linked posts
     # Check the db cache first
-    already_done = []
+    already_done = set()
     if not running_on_heroku:
         log("Loading cache", Color.BOLD)
-        with open(cache_file, 'w+') as db_file_load:
-            pickle_data = db_file_load.read()
-            if not pickle_data == "":
+        if os.path.isfile(cache_file):
+            with open(cache_file, 'r+') as db_file_load:
                 already_done = pickle.load(db_file_load)
 
         log('--Cache size: ' + str(len(already_done)))
