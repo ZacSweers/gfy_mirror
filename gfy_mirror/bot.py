@@ -118,9 +118,7 @@ class MirroredObject():
 # Called when exiting the program
 def exit_handler():
     log("SHUTTING DOWN", Color.BOLD)
-    if not running_on_heroku:
-        with open(cache_file, 'w+') as db_file_save:
-            pickle.dump(already_done, db_file_save)
+    store_cache(cache_file, already_done)
 
 
 # Called on SIGINT
@@ -136,28 +134,31 @@ def exit_bot():
 
 
 # Check cache for string
-def check_cache(input_key):
-    if running_on_heroku:
-        obj = mc.get(str(input_key))
-        if not obj or obj != "True":
-            return False
-        else:
-            return True
-    else:
-        if input_key in already_done:
-            return True
-    return False
+def check_key_exists(cache, key):
+    return key in cache
 
 
 # Cache a key (original url, gfy url, or submission id)
-def cache_key(input_key):
-    if running_on_heroku:
-        mc.set(str(input_key), "True")
-        assert str(mc.get(str(input_key))) == "True"
-    else:
-        already_done.add(input_key)
+def cache_key(cache, key, data=None):
+    if data:
+        cache[key] = data
+    elif key not in cache:
+        if isinstance(cache, set):
+            cache.add(key)
+        elif isinstance(cache, list):
+            cache.append(key)
 
-    log('--Cached ' + str(input_key), Color.GREEN)
+        log('--Cached ' + str(key), Color.GREEN)
+
+
+
+# Store cache
+def store_cache(cache_name, data):
+    if running_on_heroku:
+        mc.set(cache_name, data)
+    else:
+        with open(cache_file, 'w+') as db_file_save:
+            pickle.dump(already_done, db_file_save)
 
 
 # Remove an item from caching
@@ -201,7 +202,7 @@ def previously_commented(submission):
         try:
             if comment.author.name == bot_name:
                 log("----Previously commented, caching", Color.RED)
-                cache_key(submission.id)
+                cache_key(already_done, submission.id)
                 return True
         except:
             return False
@@ -213,16 +214,14 @@ def previously_commented(submission):
 def submission_is_valid(submission):
     # check domain/extension validity, caches, and if previously commented
     ext = extension(submission.url)
-    if (submission.domain in allowedDomains and ext not in disabled_extensions) \
-            or ext in allowed_extensions:
+    if (submission.domain in allowedDomains and ext not in disabled_extensions) or ext in allowed_extensions:
         # Check for submission id and url
-        if check_cache(submission.id) or check_cache(submission.url):
+        if check_key_exists(already_done, submission.id) or check_key_exists(already_done, submission.url):
             return False
         elif previously_commented(submission):
             return False
         else:
             return True
-        # return not (check_cache(submission.id) or check_cache(submission.url) or previously_commented(submission))
     return False
 
 
@@ -281,8 +280,8 @@ def process_submission(submission):
 
     comment_string = comment_intro + new_mirror.comment_string() + comment_info
     add_comment(submission, comment_string)
-    cache_key(str(submission.id))
-    cache_key(str(submission.url))
+    cache_key(already_done, str(submission.id))
+    cache_key(already_done, str(submission.url))
 
 
 # Add the comment with info
@@ -315,7 +314,7 @@ def bot():
             if dry_run:
                 sys.exit("Done")
         else:
-            cache_key(submission.id)
+            cache_key(already_done, submission.id)
 
     if new_count == 0:
         log("Nothing new", Color.BLUE)
