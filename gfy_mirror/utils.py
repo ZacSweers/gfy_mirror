@@ -60,6 +60,8 @@ def gfycat_convert(url_to_convert):
     if conversion_response.status_code == 200:
         log('----success', Color.GREEN)
         j = conversion_response.json()
+        if j['error']:
+            return None
         gfyname = j["gfyname"]
         return "http://gfycat.com/" + gfyname
     else:

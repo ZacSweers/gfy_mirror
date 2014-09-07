@@ -169,6 +169,12 @@ def check_key_exists(cache, key):
     return key in cache
 
 
+# Cache a submission
+def cache_submission(submission):
+    cache_key(already_done, str(submission.id))
+    cache_key(already_done, str(submission.url))
+
+
 # Cache a key (original url, gfy url, or submission id)
 def cache_key(cache, key, data=None):
 
@@ -294,8 +300,14 @@ def process_submission(submission):
     # Get converting
     log("--Beginning conversion, url to convert is " + url_to_process)
     if not already_gfycat:
-        new_mirror.gfycat_url = gfycat_convert(url_to_process)
-        log("--Gfy url is " + new_mirror.gfycat_url)
+        gfy_url = gfycat_convert(url_to_process)
+        if gfy_url:
+            new_mirror.gfycat_url = gfycat_convert(url_to_process)
+            log("--Gfy url is " + new_mirror.gfycat_url)
+        else:
+            log('--Gif is not animated!')
+            cache_submission(submission)
+            return
 
     if submission.domain != "mediacru.sh":
         # TODO check file size limit (50 mb)
@@ -314,8 +326,7 @@ def process_submission(submission):
 
     comment_string = comment_intro + new_mirror.comment_string() + comment_info
     add_comment(submission, comment_string)
-    cache_key(already_done, str(submission.id))
-    cache_key(already_done, str(submission.url))
+    cache_submission(submission)
 
 
 # Add the comment with info
