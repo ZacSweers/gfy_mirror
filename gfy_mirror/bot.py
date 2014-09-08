@@ -333,6 +333,7 @@ def process_submission(submission):
     cache_submission(submission)
     if not already_gfycat:
         # Take some time to avoid rate limiting. Annoying but necessary
+        log('-Waiting 60 seconds', Color.CYAN)
         time.sleep(60)
 
 
