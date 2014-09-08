@@ -332,6 +332,9 @@ def process_submission(submission):
     comment_string = comment_intro + new_mirror.comment_string() + comment_info
     add_comment(submission, comment_string)
     cache_submission(submission)
+    if not already_gfycat:
+        # Take some time to avoid rate limiting. Annoying but necessary
+        time.sleep(60)
 
 
 # Add the comment with info
