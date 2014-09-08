@@ -308,7 +308,6 @@ def process_submission(submission):
             new_mirror.gfycat_url = gfy_url
             log("--Gfy url is " + new_mirror.gfycat_url)
         else:
-            log('--Gif is not animated!')
             cache_submission(submission)
             return
 
