@@ -435,7 +435,7 @@ if __name__ == "__main__":
     args = sys.argv
     loginType = "propFile"
 
-    r = praw.Reddit('/u/gfy_mirror by /u/pandanomic')
+    r = praw.Reddit(user_agent='/u/gfy_mirror by /u/pandanomic')
 
     try:
         log("Retrieving login credentials", Color.BOLD)
