@@ -3,6 +3,8 @@ gfy_mirror
 
 Reddit bot to mirror gifs and gfys across a few different services while also converting gifs and vines to a "gfy" .mp4 format.
 
+*If you would like to use this bot on your subreddit, please drop me an [email](mailto:pandanomic@gmail.com) and I'd be happy to look into adding it. This source is for reference, not to flood reddit with multiple clones of the same bot :P*
+
 ### Basic flow
 - Runs on Heroku, using the free scheduler.
 - If it finds a new gif/gfy/vine, it re-uploads to a few different mirrors
@@ -14,7 +16,7 @@ Reddit bot to mirror gifs and gfys across a few different services while also co
 - Fitbamob
 
 ### TODO
-- Currently, it won't mirror Fitbamob videos due to no easily available API for retrieving the .mp4 url. I can extract it manually though via the html, the same way I handle Vines.
+- Currently, it won't re-mirror Fitbamob videos due to no easily available API for retrieving the .mp4 url. I can extract it manually though via the html, the same way I handle Vines.
 - Re-host gifs on imgur
 - I plan to eventually use a full database for this, where each MirrorObject is represented by a row. This way, if I ever come across a URL that's just a mirror of a pre-existing one, I can just retrieve it directly from the DB and save processing time on my end and the services' APIs.
 
