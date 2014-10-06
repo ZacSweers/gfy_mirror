@@ -367,10 +367,10 @@ def add_comment(submission, comment_string):
 def bot():
     log("Parsing new 30", Color.BLUE)
     new_count = 0
-    for submission in subs.get_new(limit=30):
+    for submission in subs.get_new(limit=50):
         if submission_is_valid(submission):
             new_count += 1
-            log("New Post - " + submission.url, Color.GREEN)
+            log("New Post in /r/" + submission + " - " + submission.url, Color.GREEN)
             process_submission(submission)
             if dry_run:
                 sys.exit("Done")
