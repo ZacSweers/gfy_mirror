@@ -48,7 +48,8 @@ allowedDomains = [
         "mediacru.sh",
         "fitbamob.com",
         "i.imgur.com",
-        "v.cdn.vine.co"]
+        "v.cdn.vine.co",
+        "giffer.co"]
 
 allowed_extensions = [".gif", ".mp4"]
 disabled_extensions = [".jpg", ".jpeg", ".png"]
