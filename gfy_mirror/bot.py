@@ -54,6 +54,8 @@ allowedDomains = [
 allowed_extensions = [".gif", ".mp4"]
 disabled_extensions = [".jpg", ".jpeg", ".png"]
 
+approved_subs = ['soccer', 'reddevils']
+
 # Comment strings
 comment_intro = """
 Mirrored links
@@ -365,7 +367,7 @@ def add_comment(submission, comment_string):
 def bot():
     log("Parsing new 30", Color.BLUE)
     new_count = 0
-    for submission in soccer_subreddit.get_new(limit=30):
+    for submission in subs.get_new(limit=30):
         if submission_is_valid(submission):
             new_count += 1
             log("New Post - " + submission.url, Color.GREEN)
@@ -452,8 +454,8 @@ if __name__ == "__main__":
         log("LOGIN FAILURE", Color.RED)
         exit_bot()
 
-    # read off /r/soccer
-    soccer_subreddit = r.get_subreddit('soccer')
+    # read off the subreddits
+    subs = r.get_subreddit('+'.join(approved_subs))
 
     load_caches()
     counter = 0
