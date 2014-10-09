@@ -370,7 +370,7 @@ def bot():
     for submission in subs.get_new(limit=50):
         if submission_is_valid(submission):
             new_count += 1
-            log("New Post in /r/" + submission.subreddit + " - " + submission.url, Color.GREEN)
+            log("New Post in /r/" + submission.subreddit.display_name + " - " + submission.url, Color.GREEN)
             process_submission(submission)
             if dry_run:
                 sys.exit("Done")
