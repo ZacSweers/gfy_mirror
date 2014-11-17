@@ -141,7 +141,9 @@ class MirroredObject():
 # Called when exiting the program
 def exit_handler():
     log("SHUTTING DOWN", Color.BOLD)
-    store_cache(cache_file, already_done)
+    if already_done:
+        # only store if the set's not empty. Ugly but it'll do for now to make sure we don't lose the existing cache
+        store_cache(cache_file, already_done)
 
 
 # Called on SIGINT
