@@ -54,7 +54,7 @@ allowedDomains = [
 allowed_extensions = [".gif", ".mp4"]
 disabled_extensions = [".jpg", ".jpeg", ".png"]
 
-approved_subs = ['soccer', 'reddevils']
+approved_subs = ['soccer', 'reddevils', 'LiverpoolFC']
 
 # Comment strings
 comment_intro = """
