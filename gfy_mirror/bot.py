@@ -347,7 +347,7 @@ def add_comment(submission, comment_string):
 def bot():
     log("Parsing new 50", Color.BLUE)
     new_count = 0
-    for submission in subs.get_new(limit=50):
+    for submission in subs.get_new(limit=100):
         if submission_is_valid(submission):
             new_count += 1
             log("New Post in /r/" + submission.subreddit.display_name + " - " + submission.url, Color.GREEN)
