@@ -6,7 +6,6 @@ from pyquery import pyquery
 import requests
 import sys
 import subprocess
-from pycrush import Media
 
 __author__ = 'Henri Sweers'
 
@@ -70,25 +69,14 @@ def gfycat_convert(url_to_convert):
         return "Error"
 
 
-# Convert to mediacrush
-# def mediacrush_convert(url_to_convert):
-#     log('--Converting to mediacrush')
-#
-#     # Convert
-#     media = Media()
-#     response = media.upload(str(url_to_convert))
-#     log('----success', Color.GREEN)
-#     return "https://mediacru.sh/%s" % response.hash
-
-
-def fitbamob_convert(title, url_to_convert):
-    log('--Converting to fitbamob')
+def offsided_convert(title, url_to_convert):
+    log('--Converting to offsided')
     req_data = {
         'url': url_to_convert,
         'title': title
     }
     r = requests.post(
-        'http://fitbamob.com/api/v1/upload-url',
+        'http://offsided.com/api/v1/upload-url',
         data=json.dumps(req_data),
         headers={
             'Content-type': 'application/json',
@@ -110,8 +98,8 @@ def fitbamob_convert(title, url_to_convert):
         return canonical_url
 
 
-def get_fitbamob_info(f_id):
-    req_url = "http://fitbamob.com/link/%s" % f_id
+def get_offsided_info(f_id):
+    req_url = "http://offsided.com/link/%s" % f_id
     r = requests.get(req_url)
     data = r.json()
     return data
