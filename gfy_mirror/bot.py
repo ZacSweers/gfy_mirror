@@ -13,7 +13,7 @@ import praw
 import praw.helpers
 import signal
 import psycopg2
-from utils import log, Color, retrieve_vine_video_url, gfycat_convert, get_id, mediacrush_convert, get_gfycat_info, \
+from utils import log, Color, retrieve_vine_video_url, gfycat_convert, get_id, get_gfycat_info, \
     fitbamob_convert, imgur_upload, get_fitbamob_info, notify_mac, retrieve_vine_cdn_url
 
 __author__ = 'Henri Sweers'
@@ -45,7 +45,7 @@ allowedDomains = [
         "giant.gfycat.com",
         "zippy.gfycat.com",
         "fat.gfycat.com",
-        "mediacru.sh",
+        # "mediacru.sh",
         "fitbamob.com",
         "i.imgur.com",
         "v.cdn.vine.co",
@@ -77,7 +77,7 @@ class MirroredObject():
     op_id = None
     original_url = None
     gfycat_url = None
-    mediacrush_url = None
+    # mediacrush_url = None
     fitbamob_url = None
     imgur_url = None
 
@@ -100,15 +100,15 @@ class MirroredObject():
             s += "\n\n"
             s += "* [Gfycat](%s) | [mp4](%s) - [webm](%s) - [gif](%s)" % (
                 self.gfycat_url, urls[0], urls[1], urls[2])
-        if self.mediacrush_url:
-            s += "\n\n"
-            mc_id = get_id(self.mediacrush_url)
-            s += "* [Mediacrush](%s) | " % self.mediacrush_url
-            s += "[mp4](%s)" % self.mc_url("mp4", mc_id)
-            s += " - [webm](%s)" % self.mc_url("webm", mc_id)
-            if "gfycat" not in self.original_url:
-                s += " - [gif](%s)" % self.mc_url("gif", mc_id)
-            s += " - [ogg](%s)" % self.mc_url("ogv", mc_id)
+        # if self.mediacrush_url:
+        #     s += "\n\n"
+        #     mc_id = get_id(self.mediacrush_url)
+        #     s += "* [Mediacrush](%s) | " % self.mediacrush_url
+        #     s += "[mp4](%s)" % self.mc_url("mp4", mc_id)
+        #     s += " - [webm](%s)" % self.mc_url("webm", mc_id)
+        #     if "gfycat" not in self.original_url:
+        #         s += " - [gif](%s)" % self.mc_url("gif", mc_id)
+        #     s += " - [ogg](%s)" % self.mc_url("ogv", mc_id)
         if self.fitbamob_url:
             s += "\n\n"
             s += "* [Fitbamob](%s)" % self.fitbamob_url
@@ -134,8 +134,8 @@ class MirroredObject():
         info = get_fitbamob_info(fit_id)['source']
         return info['mp4_url'], info['webm_url'], info['gif_url']
 
-    def mc_url(self, media_type, mc_id):
-        return "https://cdn.mediacru.sh/%s.%s" % (mc_id, media_type)
+    # def mc_url(self, media_type, mc_id):
+    #     return "https://cdn.mediacru.sh/%s.%s" % (mc_id, media_type)
 
 
 # Called when exiting the program
@@ -293,9 +293,9 @@ def process_submission(submission):
         already_gfycat = True
         new_mirror.gfycat_url = url_to_process
         url_to_process = get_gfycat_info(get_id(url_to_process))['mp4Url']
-    elif submission.domain == "mediacru.sh":
-        new_mirror.mediacrush_url = url_to_process
-        url_to_process = "https://cdn.mediacru.sh/%s.mp4" % get_id(url_to_process)
+    # elif submission.domain == "mediacru.sh":
+    #     new_mirror.mediacrush_url = url_to_process
+    #     url_to_process = "https://cdn.mediacru.sh/%s.mp4" % get_id(url_to_process)
     elif submission.domain == "fitbamob.com":
         new_mirror.fitbamob_url = url_to_process
         url_to_process = get_fitbamob_info(get_id(url_to_process))['mp4_url']
@@ -321,10 +321,10 @@ def process_submission(submission):
             cache_submission(submission)
             return
 
-    if submission.domain != "mediacru.sh":
-        # TODO check file size limit (50 mb)
-        new_mirror.mediacrush_url = mediacrush_convert(url_to_process)
-        log("--MC url is " + new_mirror.mediacrush_url)
+    # if submission.domain != "mediacru.sh":
+    #     # TODO check file size limit (50 mb)
+    #     new_mirror.mediacrush_url = mediacrush_convert(url_to_process)
+    #     log("--MC url is " + new_mirror.mediacrush_url)
 
     if submission.domain != "fitbamob.com":
         fitba_url = fitbamob_convert(submission.title, url_to_process)
