@@ -62,11 +62,11 @@ Mirrored links
 """
 
 comment_info = """\n\n------
-^Please ^don't ^run ^this ^bot ^under ^your ^own ^account. ^Ask ^to ^have ^your ^sub ^added ^instead.
+^(Please don't run this bot under your own account. Ask to have your sub added instead.)
 
 [^Source ^Code](https://github.com/hzsweers/gfy_mirror) ^|
 [^Feedback/Bugs?](http://www.reddit.com/message/compose?to=pandanomic&subject=gfymirror) ^|
-^By ^/[u/pandanomic](http://reddit.com/u/pandanomic)
+^(By /u/pandanomic)
 """
 
 vine_warning = "*NOTE: The original url was a Vine, which has audio. Gfycat removes audio, but the others should be fine*\n\n"
