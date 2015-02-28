@@ -14,7 +14,7 @@ import praw.helpers
 import signal
 import psycopg2
 from utils import log, Color, retrieve_vine_video_url, gfycat_convert, get_id, mediacrush_convert, get_gfycat_info, \
-    fitbamob_convert, imgur_upload, get_fitbamob_info, notify_mac, retrieve_vine_cdn_url
+    offsided_convert, imgur_upload, get_offsided_info, notify_mac, retrieve_vine_cdn_url
 
 __author__ = 'Henri Sweers'
 
@@ -46,7 +46,7 @@ allowedDomains = [
         "zippy.gfycat.com",
         "fat.gfycat.com",
         "mediacru.sh",
-        "fitbamob.com",
+        "offsided.com",
         "i.imgur.com",
         "v.cdn.vine.co",
         "giffer.co"]
@@ -78,7 +78,7 @@ class MirroredObject():
     original_url = None
     gfycat_url = None
     mediacrush_url = None
-    fitbamob_url = None
+    offsided_url = None
     imgur_url = None
 
     def __init__(self, op_id, original_url, json_data=None):
@@ -109,14 +109,14 @@ class MirroredObject():
             if "gfycat" not in self.original_url:
                 s += " - [gif](%s)" % self.mc_url("gif", mc_id)
             s += " - [ogg](%s)" % self.mc_url("ogv", mc_id)
-        if self.fitbamob_url:
+        if self.offsided_url:
             s += "\n\n"
-            s += "* [Fitbamob](%s)" % self.fitbamob_url
+            s += "* [Offsided](%s)" % self.offsided_url
             # TODO Re-enable this when possible
-            # fit_id = get_id(self.fitbamob_url)
-            # urls = self.fitbamob_urls(fit_id)
-            # s += "* [Fitbamob](%s) | [mp4](%s) - [webm](%s) - [gif](%s)" % (
-            #     self.fitbamob_url, urls[0], urls[1], urls[2])
+            # fit_id = get_id(self.offsided_url)
+            # urls = self.offsided_urls(fit_id)
+            # s += "* [Offsided](%s) | [mp4](%s) - [webm](%s) - [gif](%s)" % (
+            #     self.offsided_url, urls[0], urls[1], urls[2])
         if self.imgur_url:
             s += "\n\n"
             s += "* [Imgur](%s) (gif only)" % self.imgur_url
@@ -130,8 +130,8 @@ class MirroredObject():
         info = get_gfycat_info(gfy_id)
         return info['mp4Url'], info['webmUrl'], info['gifUrl']
 
-    def fitbamob_urls(self, fit_id):
-        info = get_fitbamob_info(fit_id)['source']
+    def offsided_urls(self, fit_id):
+        info = get_offsided_info(fit_id)['source']
         return info['mp4_url'], info['webm_url'], info['gif_url']
 
     def mc_url(self, media_type, mc_id):
@@ -296,9 +296,9 @@ def process_submission(submission):
     elif submission.domain == "mediacru.sh":
         new_mirror.mediacrush_url = url_to_process
         url_to_process = "https://cdn.mediacru.sh/%s.mp4" % get_id(url_to_process)
-    elif submission.domain == "fitbamob.com":
-        new_mirror.fitbamob_url = url_to_process
-        url_to_process = get_fitbamob_info(get_id(url_to_process))['mp4_url']
+    elif submission.domain == "offsided.com":
+        new_mirror.offsided_url = url_to_process
+        url_to_process = get_offsided_info(get_id(url_to_process))['mp4_url']
 
     if submission.domain == "giant.gfycat.com":
         # Just get the gfycat url
@@ -326,11 +326,11 @@ def process_submission(submission):
         new_mirror.mediacrush_url = mediacrush_convert(url_to_process)
         log("--MC url is " + new_mirror.mediacrush_url)
 
-    if submission.domain != "fitbamob.com":
-        fitba_url = fitbamob_convert(submission.title, url_to_process)
+    if submission.domain != "offsided.com":
+        fitba_url = offsided_convert(submission.title, url_to_process)
         if fitba_url:
-            new_mirror.fitbamob_url = fitba_url
-            log("--Fitbamob url is " + new_mirror.fitbamob_url)
+            new_mirror.offsided_url = fitba_url
+            log("--Offsided url is " + new_mirror.offsided_url)
 
     # TODO Re-enable this once "animated = false" issue resolved
     # if not already_imgur:
