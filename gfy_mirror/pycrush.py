@@ -1,7 +1,10 @@
-import requests
 import re
+import sys
+import time
+import requests
 
-re_path_template = re.compile('\<\w+\>')
+
+re_path_template = re.compile('<\w+>')
 
 
 class PyCrushException(Exception):
@@ -74,7 +77,7 @@ def bind(**cfg):
 
 
 class API(object):
-    def __init__(self, base='https://mediacru.sh/'):
+    def __init__(self, base='https://imgrush.com/'):
         if base[-1] != "/":
             base += "/"
         self.base = base
@@ -143,7 +146,7 @@ class LazyProperty(object):
 
 class Media(object):
     @classmethod
-    def upload(cls, obj, base='https://mediacru.sh'):
+    def upload(cls, obj, base='https://imgrush.com'):
         api = API(base)
 
         failure_codes = {
@@ -166,7 +169,7 @@ class Media(object):
         if code in failure_codes:
             raise UploadException(failure_codes[code], code)
         if code not in success_codes:
-            raise PyCrushException("MediaCrush returned an unknown code (%s)." % code)
+            raise PyCrushException("Imgrush returned an unknown code (%s)." % code)
 
         result.update({
             'message': success_codes[code],
@@ -177,7 +180,7 @@ class Media(object):
         return cls(**result)
 
     @classmethod
-    def get(cls, hash, base='https://mediacru.sh'):
+    def get(cls, hash, base='https://imgrush.com'):
         api = API(base)
 
         result, code = api.exists(hash=hash)
@@ -191,7 +194,6 @@ class Media(object):
         }
 
         return cls(**params)
-
 
     compression = LazyProperty('compression')
     files = LazyProperty('files')
@@ -215,10 +217,7 @@ class Media(object):
 
 
 if __name__ == '__main__':
-    import sys, time
-
     media = Media.upload(sys.argv[1])
-    # media = Media.get(sys.argv[1])
 
     media.ready_block()
     print media.compression, media.original, media.status

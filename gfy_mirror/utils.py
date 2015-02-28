@@ -70,15 +70,15 @@ def gfycat_convert(url_to_convert):
         return "Error"
 
 
-# Convert to mediacrush
-def mediacrush_convert(url_to_convert):
-    log('--Converting to mediacrush')
+# Convert to imgrush
+def imgrush_convert(url_to_convert):
+    log('--Converting to imgrush')
 
     # Convert
     media = Media()
     response = media.upload(str(url_to_convert))
     log('----success', Color.GREEN)
-    return "https://mediacru.sh/%s" % response.hash
+    return "https://imgrush.com/%s" % response.hash
 
 
 def offsided_convert(title, url_to_convert):
