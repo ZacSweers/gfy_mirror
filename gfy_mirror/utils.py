@@ -71,14 +71,14 @@ def gfycat_convert(url_to_convert):
 
 
 # Convert to mediacrush
-# def mediacrush_convert(url_to_convert):
-#     log('--Converting to mediacrush')
-#
-#     # Convert
-#     media = Media()
-#     response = media.upload(str(url_to_convert))
-#     log('----success', Color.GREEN)
-#     return "https://mediacru.sh/%s" % response.hash
+def mediacrush_convert(url_to_convert):
+    log('--Converting to mediacrush')
+
+    # Convert
+    media = Media()
+    response = media.upload(str(url_to_convert))
+    log('----success', Color.GREEN)
+    return "https://mediacru.sh/%s" % response.hash
 
 
 def fitbamob_convert(title, url_to_convert):
