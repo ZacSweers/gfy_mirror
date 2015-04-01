@@ -58,5 +58,5 @@ target/
 .idea/
 
 # Prop files
-login.json
+credentials.json
 gfy_mirror_DB
