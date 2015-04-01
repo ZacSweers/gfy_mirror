@@ -117,6 +117,21 @@ def get_offsided_info(f_id):
     return data
 
 
+def streamable_convert(url_to_convert, streamable_pwd):
+    log('--Converting to streamable')
+    url = "https://api.streamable.com/import?url=%s&noresize" % url_to_convert
+    r = requests.get(url, auth=('gfy_mirror', streamable_pwd))
+    upload_id = r.json()["shortcode"]
+    return "https://streamable.com/%s" % upload_id
+
+
+def get_streamable_info(s_id):
+    req_url = "https://api.streamable.com/videos/%s" % s_id
+    r = requests.get(req_url, auth=('gfy_mirror', 'WinYeaUsEyZ7W4'))
+    data = r.json()
+    return data
+
+
 def imgur_upload(title, url_to_process):
     log('--Uploading to imgur')
 

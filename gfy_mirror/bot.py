@@ -14,7 +14,8 @@ import praw.helpers
 import signal
 import psycopg2
 from utils import log, Color, retrieve_vine_video_url, gfycat_convert, get_id, imgrush_convert, get_gfycat_info, \
-    offsided_convert, imgur_upload, get_offsided_info, notify_mac, retrieve_vine_cdn_url
+    offsided_convert, imgur_upload, get_offsided_info, notify_mac, retrieve_vine_cdn_url, get_streamable_info, \
+    streamable_convert
 
 __author__ = 'Henri Sweers'
 
@@ -22,7 +23,7 @@ __author__ = 'Henri Sweers'
 cache_file = "gfy_mirror_DB"
 
 # File with login credentials
-propsFile = "login.json"
+propsFile = "credentials.json"
 
 # for keeping track of if we're on Heroku
 running_on_heroku = False
@@ -40,16 +41,18 @@ bot_name = "gfy_mirror"
 already_done = set()
 
 allowedDomains = [
-        "gfycat.com",
-        "vine.co",
-        "giant.gfycat.com",
-        "zippy.gfycat.com",
-        "fat.gfycat.com",
-        "imgrush.com",
-        "offsided.com",
-        "i.imgur.com",
-        "v.cdn.vine.co",
-        "giffer.co"]
+    "gfycat.com",
+    "vine.co",
+    "giant.gfycat.com",
+    "zippy.gfycat.com",
+    "fat.gfycat.com",
+    "imgrush.com",
+    "offsided.com",
+    "i.imgur.com",
+    "v.cdn.vine.co",
+    "giffer.co",
+    "streamable.com"
+]
 
 allowed_extensions = [".gif", ".mp4"]
 disabled_extensions = [".jpg", ".jpeg", ".png"]
@@ -63,7 +66,6 @@ Mirrored links
 """
 
 comment_info = """\n\n------
-^(Please don't run this bot under your own account. Ask to have your sub added instead.)
 
 [^Source ^Code](https://github.com/hzsweers/gfy_mirror) ^|
 [^Feedback/Bugs?](http://www.reddit.com/message/compose?to=pandanomic&subject=gfymirror) ^|
@@ -80,6 +82,7 @@ class MirroredObject():
     imgrush_url = None
     offsided_url = None
     imgur_url = None
+    streamable_url = None
 
     def __init__(self, op_id, original_url, json_data=None):
         if json_data:
@@ -116,10 +119,18 @@ class MirroredObject():
             # fit_id = get_id(self.offsided_url)
             # urls = self.offsided_urls(fit_id)
             # s += "* [Offsided](%s) | [mp4](%s) - [webm](%s) - [gif](%s)" % (
-            #     self.offsided_url, urls[0], urls[1], urls[2])
+            # self.offsided_url, urls[0], urls[1], urls[2])
         if self.imgur_url:
             s += "\n\n"
             s += "* [Imgur](%s) (gif only)" % self.imgur_url
+        if self.streamable_url:
+            s += "\n\n"
+            s += "* [Streamable](%s)" % self.streamable_url
+            # TODO Implement this from https://streamable.com/documentation when I have a good method for
+            # s += "* [Streamable](%s) | " % self.streamable_url
+            # for mediaType, url in self.streamable_urls(get_id(self.streamable_url)):
+            # s += "[%s](%s) - " % mediaType, url
+            # s = s[0::-2]  # Shave off the last "- "
         s += "\n"
         return s
 
@@ -136,6 +147,10 @@ class MirroredObject():
 
     def mc_url(self, media_type, mc_id):
         return "https://imgrush.com/%s.%s" % (mc_id, media_type)
+
+    def streamable_urls(self, s_id):
+        info = get_offsided_info(s_id)
+        return [{x: "https:" + info["url_root"] + x} for x in info["formats"]]
 
 
 # Called when exiting the program
@@ -188,7 +203,6 @@ def cache_submission(submission):
 
 # Cache a key (original url, gfy url, or submission id)
 def cache_key(cache, key, data=None):
-
     if dry_run:
         return
 
@@ -229,15 +243,18 @@ def cache_remove_key(input_submission):
 def retrieve_login_credentials():
     if running_on_heroku:
         login_info = [os.environ['REDDIT_USERNAME'],
-                      os.environ['REDDIT_PASSWORD']]
+                      os.environ['REDDIT_PASSWORD'],
+                      os.environ['STREAMABLE_PASSWORD']
+        ]
         return login_info
     else:
         # reading login info from a file, it should be username \n password
-        with open("login.json", "r") as loginFile:
+        with open("credentials.json", "r") as loginFile:
             login_info = json.loads(loginFile.read())
 
         login_info[0] = login_info["user"]
         login_info[1] = login_info["pwd"]
+        login_info[2] = login_info["streamable_pwd"]
         return login_info
 
 
@@ -299,6 +316,9 @@ def process_submission(submission):
     elif submission.domain == "offsided.com":
         new_mirror.offsided_url = url_to_process
         url_to_process = get_offsided_info(get_id(url_to_process))['mp4_url']
+    elif submission.domain == "streamable.com":
+        new_mirror.streamable_url = url_to_process
+        url_to_process = "https:%s.mp4" % get_streamable_info(get_id(url_to_process))["url_root"]
 
     if submission.domain == "giant.gfycat.com":
         # Just get the gfycat url
@@ -332,10 +352,14 @@ def process_submission(submission):
             new_mirror.offsided_url = fitba_url
             log("--Offsided url is " + new_mirror.offsided_url)
 
+    if submission.domain != "streamable.com":
+        new_mirror.streamable_url = streamable_convert(url_to_process, retrieve_login_credentials()[2])
+        log("--Streamable url is " + new_mirror.streamable_url)
+
     # TODO Re-enable this once "animated = false" issue resolved
     # if not already_imgur:
     # # TODO need to check 10mb file size limit
-    #     new_mirror.imgur_url = imgur_upload(submission.title, url_to_process)
+    # new_mirror.imgur_url = imgur_upload(submission.title, url_to_process)
     #     log("--Imgur url is " + new_mirror.imgur_url)
 
     comment_string = comment_intro + new_mirror.comment_string() + comment_info
@@ -367,7 +391,7 @@ def add_comment(submission, comment_string):
 
 # Main bot runner
 def bot():
-    log("Parsing new 50", Color.BLUE)
+    log("Parsing new 100", Color.BLUE)
     new_count = 0
     for submission in subs.get_new(limit=100):
         if submission_is_valid(submission):
