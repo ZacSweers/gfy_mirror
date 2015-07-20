@@ -54,8 +54,7 @@ def gfycat_convert(url_to_convert):
     encoded_url = urllib.quote(url_to_convert, '')
 
     # Convert
-    url_string = 'http://upload.gfycat.com/transcode/' + gen_random_string() + \
-                 '?fetchUrl=' + encoded_url
+    url_string = 'http://upload.gfycat.com/transcode?fetchUrl=' + encoded_url
     conversion_response = requests.get(url_string)
     if conversion_response.status_code == 200:
         log('----success', Color.GREEN)
@@ -66,6 +65,7 @@ def gfycat_convert(url_to_convert):
         gfyname = j["gfyname"]
         return "http://gfycat.com/" + gfyname
     else:
+        print conversion_response
         log('----failed', Color.RED)
         return "Error"
 

@@ -8,11 +8,9 @@ import pickle
 import sys
 import time
 import datetime
-import urlparse
 import praw
 import praw.helpers
 import signal
-import psycopg2
 from utils import log, Color, retrieve_vine_video_url, gfycat_convert, get_id, imgrush_convert, get_gfycat_info, \
     offsided_convert, imgur_upload, get_offsided_info, notify_mac, retrieve_vine_cdn_url, get_streamable_info, \
     streamable_convert
