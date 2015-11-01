@@ -2,6 +2,7 @@ import re
 import sys
 import time
 import requests
+from io import IOBase
 
 
 re_path_template = re.compile('<\w+>')
@@ -161,7 +162,7 @@ class Media(object):
             409: 'The file was already uploaded.'
         }
 
-        if isinstance(obj, file):
+        if isinstance(obj, IOBase):
             result, code = api.upload_file(file=obj)
         elif isinstance(obj, str):  # It's a string -> URL.
             result, code = api.upload_url(url=obj)
