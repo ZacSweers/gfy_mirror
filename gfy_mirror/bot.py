@@ -4,7 +4,6 @@ import getopt
 import json
 import logging
 import os
-import pickle
 import sys
 import time
 import datetime
@@ -35,9 +34,6 @@ notify = False
 # Bot name
 bot_name = "gfy_mirror"
 
-# Already processed posts
-already_done = set()
-
 allowedDomains = [
     "gfycat.com",
     "vine.co",
@@ -55,7 +51,7 @@ allowedDomains = [
 allowed_extensions = [".gif", ".mp4"]
 disabled_extensions = [".jpg", ".jpeg", ".png"]
 
-approved_subs = ['soccer', 'reddevils', 'LiverpoolFC', 'swanseacity']
+approved_subs = ['soccer', 'reddevils', 'LiverpoolFC', 'swanseacity', 'OmarTilDeath']
 
 # Comment strings
 comment_intro = """
@@ -70,17 +66,18 @@ comment_info = """\n\n------
 ^By ^/[u/pandanomic](http://reddit.com/u/pandanomic)
 """
 
-vine_warning = "*NOTE: The original url was a Vine, which has audio. Gfycat removes audio, but the others should be fine*\n\n"
+vine_warning = """*NOTE: The original url was a Vine, which has audio.
+Gfycat removes audio, but the others should be fine*\n\n"""
 
 
-class MirroredObject():
-    op_id = None
-    original_url = None
-    gfycat_url = None
-    imgrush_url = None
-    offsided_url = None
-    imgur_url = None
-    streamable_url = None
+class MirroredObject:
+    op_id = ""
+    original_url = ""
+    gfycat_url = ""
+    imgrush_url = ""
+    offsided_url = ""
+    imgur_url = ""
+    streamable_url = ""
 
     def __init__(self, op_id, original_url, json_data=None):
         if json_data:
@@ -95,12 +92,13 @@ class MirroredObject():
             if "vine.co" in self.original_url:
                 s += vine_warning
             s += "* [Original](%s)" % self.original_url
-        if self.gfycat_url:
-            gfy_id = get_id(self.gfycat_url)
-            urls = self.gfycat_urls(gfy_id)
-            s += "\n\n"
-            s += "* [Gfycat](%s) | [mp4](%s) - [webm](%s) - [gif](%s)" % (
-                self.gfycat_url, urls[0], urls[1], urls[2])
+        # Gfycat disabled for now because their random string generation isn't
+        # if self.gfycat_url:
+        #     gfy_id = get_id(self.gfycat_url)
+        #     urls = self.gfycat_urls(gfy_id)
+        #     s += "\n\n"
+        #     s += "* [Gfycat](%s) | [mp4](%s) - [webm](%s) - [gif](%s)" % (
+        #         self.gfycat_url, urls[0], urls[1], urls[2])
         if self.imgrush_url:
             s += "\n\n"
             mc_id = get_id(self.imgrush_url)
@@ -135,18 +133,22 @@ class MirroredObject():
     def to_json(self):
         return json.dumps(self.__dict__)
 
-    def gfycat_urls(self, gfy_id):
+    @staticmethod
+    def gfycat_urls(gfy_id):
         info = get_gfycat_info(gfy_id)
         return info['mp4Url'], info['webmUrl'], info['gifUrl']
 
-    def offsided_urls(self, fit_id):
+    @staticmethod
+    def offsided_urls(fit_id):
         info = get_offsided_info(fit_id)['source']
         return info['mp4_url'], info['webm_url'], info['gif_url']
 
-    def mc_url(self, media_type, mc_id):
+    @staticmethod
+    def mc_url(media_type, mc_id):
         return "https://imgrush.com/%s.%s" % (mc_id, media_type)
 
-    def streamable_urls(self, s_id):
+    @staticmethod
+    def streamable_urls(s_id):
         info = get_offsided_info(s_id)
         return [{x: "https:" + info["url_root"] + x} for x in info["formats"]]
 
@@ -154,9 +156,6 @@ class MirroredObject():
 # Called when exiting the program
 def exit_handler():
     log("SHUTTING DOWN", Color.BOLD)
-    if already_done:
-        # only store if the set's not empty. Ugly but it'll do for now to make sure we don't lose the existing cache
-        store_cache(cache_file, already_done)
 
 
 # Called on SIGINT
@@ -171,88 +170,22 @@ def exit_bot():
     sys.exit()
 
 
-def load_caches():
-    # Set with previously linked posts
-    # Check the db cache first
-    log("Loading cache", Color.BOLD)
-    global already_done
-    if running_on_heroku:
-        already_done = mc.get(cache_file)
-    else:
-        if os.path.isfile(cache_file):
-            with open(cache_file, 'r+') as db_file_load:
-                already_done = pickle.load(db_file_load)
-
-    if not already_done:
-        already_done = set()
-    log('--Cache size: ' + str(len(already_done)))
-
-
-# Check cache for string
-def check_key_exists(cache, key):
-    return key in cache
-
-
-# Cache a submission
-def cache_submission(submission):
-    cache_key(already_done, str(submission.id))
-    cache_key(already_done, str(submission.url))
-
-
-# Cache a key (original url, gfy url, or submission id)
-def cache_key(cache, key, data=None):
-    if dry_run:
-        return
-
-    if data:
-        cache[key] = data
-    elif key not in cache:
-        if isinstance(cache, set):
-            cache.add(key)
-        elif isinstance(cache, list):
-            cache.append(key)
-
-        log('--Cached ' + str(key), Color.GREEN)
-
-
-# Store cache
-def store_cache(cache_name, data):
-    if running_on_heroku:
-        mc.set(cache_name, data)
-    else:
-        with open(cache_file, 'w+') as db_file_save:
-            pickle.dump(already_done, db_file_save)
-
-
-# Remove an item from caching
-def cache_remove_key(input_submission):
-    log("--Removing from cache", Color.RED)
-    if running_on_heroku:
-        mc.delete(str(input_submission.id))
-        mc.delete(str(input_submission.url))
-    else:
-        already_done.remove(input_submission.id)
-        already_done.remove(input_submission.url)
-
-    log('--Deleted ' + str(input_submission.id), Color.RED)
-
-
 # Login
 def retrieve_login_credentials():
     if running_on_heroku:
         login_info = [os.environ['REDDIT_USERNAME'],
                       os.environ['REDDIT_PASSWORD'],
                       os.environ['STREAMABLE_PASSWORD']
-        ]
+                      ]
         return login_info
     else:
         # reading login info from a file, it should be username \n password
         with open("credentials.json", "r") as loginFile:
             login_info = json.loads(loginFile.read())
 
-        login_info[0] = login_info["user"]
-        login_info[1] = login_info["pwd"]
-        login_info[2] = login_info["streamable_pwd"]
+        login_info[0] = login_info["REDDIT_USERNAME"]
+        login_info[1] = login_info["REDDIT_PASSWORD"]
+        login_info[2] = login_info["STREAMABLE_PASSWORD"]
         return login_info
 
 
@@ -267,8 +200,7 @@ def previously_commented(submission):
     for comment in flat_comments:
         try:
             if comment.author.name == bot_name:
-                log("----Previously commented, caching", Color.RED)
-                cache_key(already_done, submission.id)
+                log("----Previously commented, skipping")
                 return True
         except:
             return False
@@ -282,13 +214,11 @@ def submission_is_valid(submission):
     ext = extension(submission.url)
     if (submission.domain in allowedDomains and ext not in disabled_extensions) or ext in allowed_extensions:
         # Check for submission id and url
-        if check_key_exists(already_done, submission.id) or check_key_exists(already_done, submission.url):
-            return False
-        elif previously_commented(submission):
-            return False
+        if previously_commented(submission):
+            return False, True
         else:
-            return True
-    return False
+            return True, False
+    return False, False
 
 
 # Process a gif post
@@ -335,9 +265,6 @@ def process_submission(submission):
         if gfy_url:
             new_mirror.gfycat_url = gfy_url
             log("--Gfy url is " + new_mirror.gfycat_url)
-        else:
-            cache_submission(submission)
-            return
 
     if submission.domain != "imgrush.com":
         # TODO check file size limit (50 mb)
@@ -362,7 +289,6 @@ def process_submission(submission):
 
     comment_string = comment_intro + new_mirror.comment_string() + comment_info
     add_comment(submission, comment_string)
-    cache_submission(submission)
     if not already_gfycat:
         # Take some time to avoid rate limiting. Annoying but necessary
         log('-Waiting 60 seconds', Color.CYAN)
@@ -389,20 +315,29 @@ def add_comment(submission, comment_string):
 
 # Main bot runner
 def bot():
-    log("Parsing new 100", Color.BLUE)
-    new_count = 0
-    for submission in subs.get_new(limit=100):
-        if submission_is_valid(submission):
-            new_count += 1
-            log("New Post in /r/" + submission.subreddit.display_name + " - " + submission.url, Color.GREEN)
-            process_submission(submission)
-            if dry_run:
-                sys.exit("Done")
-        else:
-            cache_key(already_done, submission.id)
+    for sub in approved_subs:
+        log("Checking for posts in /r/" + sub, Color.BLUE)
+        now = datetime.datetime.utcnow()
+        now_minus_10 = now + datetime.timedelta(minutes=-10)
+        float_now_minus_10 = time.mktime(now_minus_10.timetuple())
+        subreddit = r.get_subreddit(sub)
+        submissions = [p for p in subreddit.get_new(limit=200) if p.created_utc > float_now_minus_10]
+        for submission in sorted(submissions, key=lambda p: p.created_utc):
+            is_valid, has_commented = submission_is_valid(submission)
+            log("Analyzing " + submission.title)
+            if is_valid:
+                log("New Post in /r/" + submission.subreddit.display_name + " - " + submission.url, Color.GREEN)
+                process_submission(submission)
+                if dry_run:
+                    sys.exit("Done")
+            elif has_commented:
+                return
+            else:
+                continue
 
-    if new_count == 0:
-        log("Nothing new", Color.BLUE)
+        if len(submissions) == 0:
+            log("Nothing new", Color.BLUE)
+
 
 # Main method
 if __name__ == "__main__":
@@ -410,19 +345,11 @@ if __name__ == "__main__":
     try:
         opts, args = getopt.getopt(sys.argv[1:], "fdn", ["flushvalid", "dry", "notify"])
     except getopt.GetoptError:
-        print 'check_and_delete.py -f -d -n'
+        print('bot.py -f -d -n')
         sys.exit(2)
 
-    if os.environ.get('MEMCACHEDCLOUD_SERVERS', None):
-        import bmemcached
-
-        log('Running on heroku, using memcached', Color.BOLD)
-
+    if os.environ.get('HEROKU', None):
         running_on_heroku = True
-        mc = bmemcached.Client(os.environ.get('MEMCACHEDCLOUD_SERVERS').
-                               split(','),
-                               os.environ.get('MEMCACHEDCLOUD_USERNAME'),
-                               os.environ.get('MEMCACHEDCLOUD_PASSWORD'))
 
         # TODO Eventually we'll want to DB this instead
         # urlparse.uses_netloc.append("postgres")
@@ -443,7 +370,7 @@ if __name__ == "__main__":
             elif o in ("-n", "--notify"):
                 notify = True
             elif o in ("-f", "--flushvalid"):
-                response = raw_input("Are you sure? Y/N")
+                response = input("Are you sure? Y/N")
                 if response.lower() == 'y':
                     # TODO
                     pass
@@ -472,16 +399,12 @@ if __name__ == "__main__":
     try:
         log("Retrieving login credentials", Color.BOLD)
         loginInfo = retrieve_login_credentials()
-        r.login(loginInfo[0], loginInfo[1])
+        r.login(loginInfo[0], loginInfo[1], disable_warning=True)
         log("--Login successful", Color.GREEN)
     except praw.errors:
         log("LOGIN FAILURE", Color.RED)
         exit_bot()
 
-    # read off the subreddits
-    subs = r.get_subreddit('+'.join(approved_subs))
-
-    load_caches()
     counter = 0
 
     if running_on_heroku:

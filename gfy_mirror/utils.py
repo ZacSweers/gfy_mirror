@@ -1,8 +1,8 @@
 import json
 import random
 import string
-import urllib
 from pyquery import pyquery
+from urllib.parse import quote
 import requests
 import sys
 import subprocess
@@ -37,21 +37,21 @@ def notify_mac(message):
                 ["terminal-notifier", "-message", message, "-title", "FB_Bot",
                  "-sound", "default"])
         except OSError:
-            print "If you have terminal-notifier, this would be a notification"
+            print("If you have terminal-notifier, this would be a notification")
 
 
 # Log method. If there's a color argument, it'll stick that in first
 def log(message, *colorargs):
     if len(colorargs) > 0:
-        print colorargs[0] + message + Color.END
+        print(colorargs[0] + message + Color.END)
     else:
-        print message
+        print(message)
 
 
 # Convert gifs to gfycat
 def gfycat_convert(url_to_convert):
     log('--Converting to gfycat')
-    encoded_url = urllib.quote(url_to_convert, '')
+    encoded_url = quote(url_to_convert, '')
 
     # Convert
     url_string = 'http://upload.gfycat.com/transcode?fetchUrl=' + encoded_url
@@ -65,7 +65,7 @@ def gfycat_convert(url_to_convert):
         gfyname = j["gfyname"]
         return "http://gfycat.com/" + gfyname
     else:
-        print conversion_response
+        print(conversion_response)
         log('----failed', Color.RED)
         return "Error"
 
@@ -155,10 +155,10 @@ def imgur_upload(title, url_to_process):
     jdata = r.json()
     if jdata['success']:
         link = jdata['data']['link']
-        print 'link is ' + link
+        print('link is ' + link)
         return link
     else:
-        print "error"
+        print("error")
 
 
 # Returns the .mp4 url of a vine video
@@ -180,7 +180,7 @@ def retrieve_vine_cdn_url(cdn_url):
 # Generate a random 10 letter string
 # Borrowed from here: http://stackoverflow.com/a/16962716/3034339
 def gen_random_string():
-    return ''.join(random.sample(string.letters * 10, 10))
+    return ''.join(random.sample(string.ascii_letters * 10, 10))
 
 
 # Gets the id of a video assuming it's of the "website.com/<id>" type

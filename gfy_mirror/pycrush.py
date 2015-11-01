@@ -220,4 +220,4 @@ if __name__ == '__main__':
     media = Media.upload(sys.argv[1])
 
     media.ready_block()
-    print media.compression, media.original, media.status
+    print(media.compression, media.original, media.status)
