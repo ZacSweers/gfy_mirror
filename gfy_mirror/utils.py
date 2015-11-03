@@ -54,7 +54,7 @@ def gfycat_convert(url_to_convert):
     encoded_url = quote(url_to_convert, '')
 
     # Convert
-    url_string = 'http://upload.gfycat.com/transcode?fetchUrl=' + encoded_url
+    url_string = 'http://upload.gfycat.com/transcode?noMd5=true&fetchUrl=' + encoded_url
     conversion_response = requests.get(url_string)
     if conversion_response.status_code == 200:
         log('----success', Color.GREEN)

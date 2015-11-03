@@ -64,6 +64,8 @@ comment_info = """\n\n------
 [^Source ^Code](https://github.com/hzsweers/gfy_mirror) ^|
 [^Feedback/Bugs?](http://www.reddit.com/message/compose?to=pandanomic&subject=gfymirror) ^|
 ^By ^/[u/pandanomic](http://reddit.com/u/pandanomic)
+
+^Gfycat ^tentatively ^enabled ^again. ^Please ^report ^if ^it ^is ^pointing ^to ^the ^wrong ^clip!
 """
 
 vine_warning = """*NOTE: The original url was a Vine, which has audio.
@@ -92,13 +94,12 @@ class MirroredObject:
             if "vine.co" in self.original_url:
                 s += vine_warning
             s += "* [Original](%s)" % self.original_url
-        # Gfycat disabled for now because their random string generation isn't
-        # if self.gfycat_url:
-        #     gfy_id = get_id(self.gfycat_url)
-        #     urls = self.gfycat_urls(gfy_id)
-        #     s += "\n\n"
-        #     s += "* [Gfycat](%s) | [mp4](%s) - [webm](%s) - [gif](%s)" % (
-        #         self.gfycat_url, urls[0], urls[1], urls[2])
+        if self.gfycat_url:
+            gfy_id = get_id(self.gfycat_url)
+            urls = self.gfycat_urls(gfy_id)
+            s += "\n\n"
+            s += "* [Gfycat](%s) | [mp4](%s) - [webm](%s) - [gif](%s)" % (
+                self.gfycat_url, urls[0], urls[1], urls[2])
         if self.imgrush_url:
             s += "\n\n"
             mc_id = get_id(self.imgrush_url)
