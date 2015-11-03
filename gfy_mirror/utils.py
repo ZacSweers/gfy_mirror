@@ -193,5 +193,5 @@ def get_id(url_to_get):
 # Get gfycat info
 def get_gfycat_info(gfy_id):
     response = requests.get("http://www.gfycat.com/cajax/get/%s" % gfy_id)
-    jdata = json.loads(response.content)
+    jdata = response.json()
     return jdata['gfyItem']
