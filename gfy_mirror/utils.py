@@ -1,6 +1,8 @@
 import json
+import os
 import random
 import string
+from urllib import request
 from pyquery import pyquery
 from urllib.parse import quote
 import requests
@@ -187,7 +189,13 @@ def gen_random_string():
 def get_id(url_to_get):
     if url_to_get[-1] == '/':
         url_to_get = url_to_get[:-1]
-    return url_to_get.split('/')[-1]
+
+    end = url_to_get.split('/')[-1]
+    if '.' in end:
+        # Truncate the extension if need be
+        return os.path.splitext(end)[0]
+    else:
+        return end
 
 
 # Get gfycat info
@@ -195,3 +203,8 @@ def get_gfycat_info(gfy_id):
     response = requests.get("http://www.gfycat.com/cajax/get/%s" % gfy_id)
     jdata = response.json()
     return jdata['gfyItem']
+
+
+def get_remote_file_size(url):
+    d = request.urlopen(url)
+    return d.length

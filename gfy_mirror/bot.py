@@ -10,9 +10,10 @@ import datetime
 import praw
 import praw.helpers
 import signal
+from imgurpython import ImgurClient
 from utils import log, Color, retrieve_vine_video_url, gfycat_convert, get_id, imgrush_convert, get_gfycat_info, \
     offsided_convert, imgur_upload, get_offsided_info, notify_mac, retrieve_vine_cdn_url, get_streamable_info, \
-    streamable_convert
+    streamable_convert, get_remote_file_size
 
 __author__ = 'Henri Sweers'
 
@@ -43,12 +44,13 @@ allowedDomains = [
     "imgrush.com",
     "offsided.com",
     "i.imgur.com",
+    "imgur.com",
     "v.cdn.vine.co",
     "giffer.co",
     "streamable.com"
 ]
 
-allowed_extensions = [".gif", ".mp4"]
+allowed_extensions = [".gif", ".mp4", ".gifv"]
 disabled_extensions = [".jpg", ".jpeg", ".png"]
 
 approved_subs = ['soccer', 'reddevils', 'LiverpoolFC', 'swanseacity', 'OmarTilDeath']
@@ -119,12 +121,15 @@ class MirroredObject:
             # self.offsided_url, urls[0], urls[1], urls[2])
         if self.imgur_url:
             s += "\n\n"
-            s += "* [Imgur](%s) (gif only)" % self.imgur_url
+            s += "* [Imgur](%s) - " % self.imgur_url
+            for mediaType, url in self.imgur_urls(get_id(self.imgur_url)):
+                s += "[%s](%s) - " % (mediaType, url)
+                s = s[0:-2]  # Shave off the last "- "
         if self.streamable_url:
             s += "\n\n"
             s += "* [Streamable](%s) | " % self.streamable_url
             for mediaType, url in self.streamable_urls(get_id(self.streamable_url)):
-                s += "[%s](%s) - " % mediaType, url
+                s += "[%s](%s) - " % (mediaType, url)
                 s = s[0:-2]  # Shave off the last "- "
         s += "\n"
         return s
@@ -149,7 +154,19 @@ class MirroredObject:
     @staticmethod
     def streamable_urls(s_id):
         info = get_streamable_info(s_id)
-        return [{x: "https:" + info["files"][x]["url"]} for x in info["files"]]
+        return [[x, "https:" + info["files"][x]["url"]] for x in info["files"]]
+
+    @staticmethod
+    def imgur_urls(s_id):
+        info = imgur_client.get_image(s_id)
+        imgur_info = []
+        if info.__dict__["mp4"]:
+            imgur_info.append(["mp4", info.mp4])
+        if info.__dict__["webm"]:
+            imgur_info.append(["webm", info.webm])
+        if extension(info.link) == "gif":
+            imgur_info.append(["gif", info.link])
+        return imgur_info
 
 
 # Called when exiting the program
@@ -174,7 +191,9 @@ def retrieve_login_credentials():
     if running_on_heroku:
         login_info = [os.environ['REDDIT_USERNAME'],
                       os.environ['REDDIT_PASSWORD'],
-                      os.environ['STREAMABLE_PASSWORD']
+                      os.environ['STREAMABLE_PASSWORD'],
+                      os.environ['IMGUR_CLIENT'],
+                      os.environ['IMGUR_SECRET']
                       ]
         return login_info
     else:
@@ -185,6 +204,8 @@ def retrieve_login_credentials():
         login_info[0] = login_info["REDDIT_USERNAME"]
         login_info[1] = login_info["REDDIT_PASSWORD"]
         login_info[2] = login_info["STREAMABLE_PASSWORD"]
+        login_info[3] = login_info["IMGUR_CLIENT"]
+        login_info[4] = login_info["IMGUR_SECRET"]
         return login_info
 
 
@@ -225,7 +246,6 @@ def process_submission(submission):
     new_mirror = MirroredObject(submission.id, submission.url)
 
     already_gfycat = False
-    already_imgur = False
 
     url_to_process = submission.url
 
@@ -246,16 +266,19 @@ def process_submission(submission):
     elif submission.domain == "streamable.com":
         new_mirror.streamable_url = url_to_process
         url_to_process = "https:%s.mp4" % get_streamable_info(get_id(url_to_process))["url_root"]
+    elif submission.domain == "imgur.com" or submission.domain == "i.imgur.com":
+        new_mirror.imgur_url = url_to_process
+        imgur_data = imgur_client.get_image(get_id(url_to_process))
+        if extension(url_to_process) == "gif":
+            url_to_process = imgur_data.link
+        else:
+            url_to_process = imgur_data.mp4
 
     if submission.domain == "giant.gfycat.com":
         # Just get the gfycat url
         url_to_process = url_to_process.replace("giant.", "")
         new_mirror.gfycat_url = url_to_process
         already_gfycat = True
-
-    if submission.domain == "imgur.com" and extension(url_to_process) == ".gif":
-        new_mirror.imgur_url = url_to_process
-        already_imgur = True
 
     # Get converting
     log("--Beginning conversion, url to convert is " + url_to_process)
@@ -265,10 +288,12 @@ def process_submission(submission):
             new_mirror.gfycat_url = gfy_url
             log("--Gfy url is " + new_mirror.gfycat_url)
 
-    if submission.domain != "imgrush.com":
-        # TODO check file size limit (50 mb)
+    remote_size = get_remote_file_size(url_to_process)
+
+    if submission.domain != "imgrush.com" and remote_size < 52428800:
+        # check file size limit (50 mb)
         new_mirror.imgrush_url = imgrush_convert(url_to_process)
-        log("--MC url is " + new_mirror.imgrush_url)
+        log("--ImageRush url is " + new_mirror.imgrush_url)
 
     if submission.domain != "offsided.com":
         fitba_url = offsided_convert(submission.title, url_to_process)
@@ -280,10 +305,11 @@ def process_submission(submission):
         new_mirror.streamable_url = streamable_convert(url_to_process, retrieve_login_credentials()[2])
         log("--Streamable url is " + new_mirror.streamable_url)
 
-    # TODO Re-enable this once "animated = false" issue resolved
-    # if not already_imgur:
-    # # TODO need to check 10mb file size limit
-    # new_mirror.imgur_url = imgur_upload(submission.title, url_to_process)
+    # if (submission.domain != "imgur.com" and submission.domain != "i.imgur.com") and remote_size < 10485760:
+    #     # 10MB file size limit
+    #     imgurdata = imgur_client.upload_from_url(url_to_process, config=None, anon=True)
+    #     print("Imgurdata - " + imgurdata)
+    #     new_mirror.imgur_url = imgurdata.link
     #     log("--Imgur url is " + new_mirror.imgur_url)
 
     comment_string = comment_intro + new_mirror.comment_string() + comment_info
@@ -395,15 +421,16 @@ if __name__ == "__main__":
 
     r = praw.Reddit(user_agent='/u/gfy_mirror by /u/pandanomic')
 
+    log("Retrieving login credentials", Color.BOLD)
+    loginInfo = retrieve_login_credentials()
     try:
-        log("Retrieving login credentials", Color.BOLD)
-        loginInfo = retrieve_login_credentials()
         r.login(loginInfo[0], loginInfo[1], disable_warning=True)
         log("--Login successful", Color.GREEN)
     except praw.errors:
         log("LOGIN FAILURE", Color.RED)
         exit_bot()
 
+    imgur_client = ImgurClient(loginInfo[3], loginInfo[4])
     counter = 0
 
     if running_on_heroku:

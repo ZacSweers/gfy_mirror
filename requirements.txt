@@ -1,3 +1,4 @@
 praw==3.3.0
 requests==2.8.1
 pyquery==1.2.9
+imgurpython==1.1.6
