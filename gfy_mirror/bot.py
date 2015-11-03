@@ -122,12 +122,10 @@ class MirroredObject:
             s += "* [Imgur](%s) (gif only)" % self.imgur_url
         if self.streamable_url:
             s += "\n\n"
-            s += "* [Streamable](%s)" % self.streamable_url
-            # TODO Implement this from https://streamable.com/documentation when I have a good method for
-            # s += "* [Streamable](%s) | " % self.streamable_url
-            # for mediaType, url in self.streamable_urls(get_id(self.streamable_url)):
-            # s += "[%s](%s) - " % mediaType, url
-            # s = s[0::-2]  # Shave off the last "- "
+            s += "* [Streamable](%s) | " % self.streamable_url
+            for mediaType, url in self.streamable_urls(get_id(self.streamable_url)):
+                s += "[%s](%s) - " % mediaType, url
+                s = s[0:-2]  # Shave off the last "- "
         s += "\n"
         return s
 
@@ -150,8 +148,8 @@ class MirroredObject:
 
     @staticmethod
     def streamable_urls(s_id):
-        info = get_offsided_info(s_id)
-        return [{x: "https:" + info["url_root"] + x} for x in info["formats"]]
+        info = get_streamable_info(s_id)
+        return [{x: "https:" + info["files"][x]["url"]} for x in info["files"]]
 
 
 # Called when exiting the program
