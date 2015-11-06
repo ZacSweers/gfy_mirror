@@ -66,12 +66,13 @@ comment_info = """\n\n------
 [^Source ^Code](https://github.com/hzsweers/gfy_mirror) ^|
 [^Feedback/Bugs?](http://www.reddit.com/message/compose?to=pandanomic&subject=gfymirror) ^|
 ^By ^/[u/pandanomic](http://reddit.com/u/pandanomic)
-
-^Gfycat ^tentatively ^enabled ^again. ^Please ^report ^if ^it ^is ^pointing ^to ^the ^wrong ^clip!
 """
 
 vine_warning = """*NOTE: The original url was a Vine, which has audio.
 Gfycat removes audio, but the others should be fine*\n\n"""
+
+gfycat_warning = """
+\n^Gfycat ^tentatively ^enabled ^again. ^Please ^report ^if ^it ^is ^pointing ^to ^the ^wrong ^clip!"""
 
 
 class MirroredObject:
@@ -90,12 +91,12 @@ class MirroredObject:
             self.op_id = op_id
             self.original_url = original_url
 
-    def comment_string(self):
+    def comment_string(self, domain):
         s = "\n"
         if self.original_url:
             if "vine.co" in self.original_url:
                 s += vine_warning
-            s += "* [Original](%s)" % self.original_url
+            s += "* [Original (%s)](%s)" % (domain, self.original_url)
         if self.gfycat_url:
             gfy_id = get_id(self.gfycat_url)
             urls = self.gfycat_urls(gfy_id)
@@ -113,24 +114,22 @@ class MirroredObject:
             s += " - [ogg](%s)" % self.mc_url("ogv", mc_id)
         if self.offsided_url:
             s += "\n\n"
-            s += "* [Offsided](%s)" % self.offsided_url
-            # TODO Re-enable this when possible
-            # fit_id = get_id(self.offsided_url)
-            # urls = self.offsided_urls(fit_id)
-            # s += "* [Offsided](%s) | [mp4](%s) - [webm](%s) - [gif](%s)" % (
-            # self.offsided_url, urls[0], urls[1], urls[2])
+            s += "* [Offsided](%s) | " % self.offsided_url
+            for mediaType, url in self.offsided_urls(get_id(self.offsided_url)):
+                s += "[%s](%s) - " % (mediaType, url)
+            s = s[0:-2]  # Shave off the last "- "
         if self.imgur_url:
             s += "\n\n"
-            s += "* [Imgur](%s) - " % self.imgur_url
+            s += "* [Imgur](%s) | " % self.imgur_url
             for mediaType, url in self.imgur_urls(get_id(self.imgur_url)):
                 s += "[%s](%s) - " % (mediaType, url)
-                s = s[0:-2]  # Shave off the last "- "
+            s = s[0:-2]  # Shave off the last "- "
         if self.streamable_url:
             s += "\n\n"
             s += "* [Streamable](%s) | " % self.streamable_url
             for mediaType, url in self.streamable_urls(get_id(self.streamable_url)):
                 s += "[%s](%s) - " % (mediaType, url)
-                s = s[0:-2]  # Shave off the last "- "
+            s = s[0:-2]  # Shave off the last "- "
         s += "\n"
         return s
 
@@ -144,8 +143,8 @@ class MirroredObject:
 
     @staticmethod
     def offsided_urls(fit_id):
-        info = get_offsided_info(fit_id)['source']
-        return info['mp4_url'], info['webm_url'], info['gif_url']
+        info = get_offsided_info(fit_id)
+        return [[x, info[x]] for x in ('mp4_url', 'webm_url', 'gif_url') if info[x]]
 
     @staticmethod
     def mc_url(media_type, mc_id):
@@ -265,14 +264,18 @@ def process_submission(submission):
         url_to_process = get_offsided_info(get_id(url_to_process))['mp4_url']
     elif submission.domain == "streamable.com":
         new_mirror.streamable_url = url_to_process
-        url_to_process = "https:%s.mp4" % get_streamable_info(get_id(url_to_process))["url_root"]
+        url_to_process = "%s.mp4" % get_streamable_info(get_id(url_to_process))["url_root"]
+        if not url_to_process.startswith('https:'):
+            url_to_process = 'https:' + url_to_process
     elif submission.domain == "imgur.com" or submission.domain == "i.imgur.com":
         new_mirror.imgur_url = url_to_process
         imgur_data = imgur_client.get_image(get_id(url_to_process))
         if extension(url_to_process) == "gif":
             url_to_process = imgur_data.link
+        elif "mp4" in imgur_data.__dict__:
+            url_to_process = imgur_data.__dict__["mp4"]
         else:
-            url_to_process = imgur_data.mp4
+            return
 
     if submission.domain == "giant.gfycat.com":
         # Just get the gfycat url
@@ -293,7 +296,7 @@ def process_submission(submission):
     if submission.domain != "imgrush.com" and remote_size < 52428800:
         # check file size limit (50 mb)
         new_mirror.imgrush_url = imgrush_convert(url_to_process)
-        log("--ImageRush url is " + new_mirror.imgrush_url)
+        log("--ImgRush url is " + new_mirror.imgrush_url)
 
     if submission.domain != "offsided.com":
         fitba_url = offsided_convert(submission.title, url_to_process)
@@ -312,7 +315,11 @@ def process_submission(submission):
     #     new_mirror.imgur_url = imgurdata.link
     #     log("--Imgur url is " + new_mirror.imgur_url)
 
-    comment_string = comment_intro + new_mirror.comment_string() + comment_info
+    comment_string = comment_intro + new_mirror.comment_string(submission.domain) + comment_info
+
+    # TODO Remove this if gfycat has no more problems
+    if new_mirror.gfycat_url and submission.domain == 'streamable.com':
+        comment_string += gfycat_warning
     add_comment(submission, comment_string)
     if not already_gfycat:
         # Take some time to avoid rate limiting. Annoying but necessary
@@ -394,12 +401,6 @@ if __name__ == "__main__":
                 dry_run = True
             elif o in ("-n", "--notify"):
                 notify = True
-            elif o in ("-f", "--flushvalid"):
-                response = input("Are you sure? Y/N")
-                if response.lower() == 'y':
-                    # TODO
-                    pass
-                sys.exit()
             else:
                 sys.exit('No valid args specified')
 

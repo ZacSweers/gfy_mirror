@@ -2,13 +2,15 @@ import json
 import os
 import random
 import string
-from urllib import request
-from pyquery import pyquery
-from urllib.parse import quote
-import requests
-import sys
 import subprocess
+import sys
+import time
+from urllib import request
+from urllib.parse import quote
+
+import requests
 from pycrush import Media
+from pyquery import pyquery
 
 __author__ = 'Henri Sweers'
 
@@ -56,20 +58,36 @@ def gfycat_convert(url_to_convert):
     encoded_url = quote(url_to_convert, '')
 
     # Convert
-    url_string = 'http://upload.gfycat.com/transcode?noMd5=true&fetchUrl=' + encoded_url
-    conversion_response = requests.get(url_string)
+    key = ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(8))
+    transcode_url = 'http://upload.gfycat.com/transcodeRelease/' + key + '?noMd5=true&fetchUrl=' + encoded_url
+    conversion_response = requests.get(transcode_url)
     if conversion_response.status_code == 200:
-        log('----success', Color.GREEN)
         j = conversion_response.json()
         if 'error' in j.keys():
             log('----Error: ' + j['error'], Color.RED)
             return None
-        gfyname = j["gfyname"]
-        return "http://gfycat.com/" + gfyname
     else:
         print(conversion_response)
         log('----failed', Color.RED)
         return "Error"
+
+    timeout = 60
+    while timeout > 0:
+        status_url = 'http://upload.gfycat.com/status/' + key
+        status_response = requests.get(status_url)
+        j = status_response.json()
+        if 'error' in j.keys():
+            log('----Error: ' + j['error'], Color.RED)
+            return None
+        if 'task' in j.keys() and j['task'] == 'complete':
+            log('----success', Color.GREEN)
+            gfyname = j["gfyname"]
+            return "http://gfycat.com/" + gfyname
+        timeout -= 1
+        time.sleep(1)
+
+    log("----conversion timed out", Color.RED)
+    return None
 
 
 # Convert to imgrush
@@ -107,9 +125,25 @@ def offsided_convert(title, url_to_convert):
     else:
         upload_id = r.json()['id']
         canonical_url = r.json()['canonical_url']
-        log('----Started conversion of gif, video will be available under ' + canonical_url, Color.GREEN)
-        log('----success', Color.GREEN)
-        return canonical_url
+
+    timeout = 60
+    while timeout > 0:
+        r = requests.get(
+            'http://offsided.com/api/v1/' + upload_id,
+            headers={
+                'Accept': 'application/json'
+            }
+        )
+        if r.json()['status'] == 'complete':
+            log('----Video is complete at ' + r.json()['canonical_url'], Color.GREEN)
+            log('----success', Color.GREEN)
+            return canonical_url
+        elif r.json()['status'] == 'error':
+            log('----Conversion failed.', Color.RED)
+            return None
+        else:
+            timeout -= 1
+            time.sleep(1)
 
 
 def get_offsided_info(f_id):
