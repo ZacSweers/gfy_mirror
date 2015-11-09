@@ -71,9 +71,6 @@ comment_info = """\n\n------
 vine_warning = """*NOTE: The original url was a Vine, which has audio.
 Gfycat removes audio, but the others should be fine*\n\n"""
 
-gfycat_warning = """
-\n^Gfycat ^tentatively ^enabled ^again. ^Please ^report ^if ^it ^is ^pointing ^to ^the ^wrong ^clip!"""
-
 
 class MirroredObject:
     op_id = ""
@@ -317,9 +314,6 @@ def process_submission(submission):
 
     comment_string = comment_intro + new_mirror.comment_string(submission.domain) + comment_info
 
-    # TODO Remove this if gfycat has no more problems
-    if new_mirror.gfycat_url and submission.domain == 'streamable.com':
-        comment_string += gfycat_warning
     add_comment(submission, comment_string)
     if not already_gfycat:
         # Take some time to avoid rate limiting. Annoying but necessary
