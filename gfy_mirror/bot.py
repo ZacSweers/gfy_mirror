@@ -11,7 +11,7 @@ import praw
 import praw.helpers
 import signal
 from imgurpython import ImgurClient
-from utils import log, Color, retrieve_vine_video_url, gfycat_convert, get_id, imgrush_convert, get_gfycat_info, \
+from utils import log, Color, retrieve_vine_video_url, gfycat_convert, get_id, get_gfycat_info, \
     offsided_convert, imgur_upload, get_offsided_info, notify_mac, retrieve_vine_cdn_url, get_streamable_info, \
     streamable_convert, get_remote_file_size
 
@@ -41,7 +41,6 @@ allowedDomains = [
     "giant.gfycat.com",
     "zippy.gfycat.com",
     "fat.gfycat.com",
-    "imgrush.com",
     "offsided.com",
     "i.imgur.com",
     "imgur.com",
@@ -76,7 +75,6 @@ class MirroredObject:
     op_id = ""
     original_url = ""
     gfycat_url = ""
-    imgrush_url = ""
     offsided_url = ""
     imgur_url = ""
     streamable_url = ""
@@ -100,15 +98,6 @@ class MirroredObject:
             s += "\n\n"
             s += "* [Gfycat](%s) | [mp4](%s) - [webm](%s) - [gif](%s)" % (
                 self.gfycat_url, urls[0], urls[1], urls[2])
-        if self.imgrush_url:
-            s += "\n\n"
-            mc_id = get_id(self.imgrush_url)
-            s += "* [Imgrush](%s) | " % self.imgrush_url
-            s += "[mp4](%s)" % self.mc_url("mp4", mc_id)
-            s += " - [webm](%s)" % self.mc_url("webm", mc_id)
-            if "gfycat" not in self.original_url:
-                s += " - [gif](%s)" % self.mc_url("gif", mc_id)
-            s += " - [ogg](%s)" % self.mc_url("ogv", mc_id)
         if self.offsided_url:
             s += "\n\n"
             s += "* [Offsided](%s) | " % self.offsided_url
@@ -142,10 +131,6 @@ class MirroredObject:
     def offsided_urls(fit_id):
         info = get_offsided_info(fit_id)
         return [[x, info[x]] for x in ('mp4_url', 'webm_url', 'gif_url') if info[x]]
-
-    @staticmethod
-    def mc_url(media_type, mc_id):
-        return "https://imgrush.com/%s.%s" % (mc_id, media_type)
 
     @staticmethod
     def streamable_urls(s_id):
@@ -253,9 +238,6 @@ def process_submission(submission):
         already_gfycat = True
         new_mirror.gfycat_url = url_to_process
         url_to_process = get_gfycat_info(get_id(url_to_process))['mp4Url']
-    elif submission.domain == "imgrush.com":
-        new_mirror.imgrush_url = url_to_process
-        url_to_process = "https://imgrush.com/%s.mp4" % get_id(url_to_process)
     elif submission.domain == "offsided.com":
         new_mirror.offsided_url = url_to_process
         url_to_process = get_offsided_info(get_id(url_to_process))['mp4_url']
@@ -289,11 +271,6 @@ def process_submission(submission):
             log("--Gfy url is " + new_mirror.gfycat_url)
 
     remote_size = get_remote_file_size(url_to_process)
-
-    if submission.domain != "imgrush.com" and remote_size < 52428800:
-        # check file size limit (50 mb)
-        new_mirror.imgrush_url = imgrush_convert(url_to_process)
-        log("--ImgRush url is " + new_mirror.imgrush_url)
 
     if submission.domain != "offsided.com":
         fitba_url = offsided_convert(submission.title, url_to_process)

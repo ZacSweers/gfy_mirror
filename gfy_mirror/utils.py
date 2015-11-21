@@ -9,7 +9,6 @@ from urllib import request
 from urllib.parse import quote
 
 import requests
-from pycrush import Media
 from pyquery import pyquery
 
 __author__ = 'Henri Sweers'
@@ -88,17 +87,6 @@ def gfycat_convert(url_to_convert):
 
     log("----conversion timed out", Color.RED)
     return None
-
-
-# Convert to imgrush
-def imgrush_convert(url_to_convert):
-    log('--Converting to imgrush')
-
-    # Convert
-    media = Media()
-    response = media.upload(str(url_to_convert))
-    log('----success', Color.GREEN)
-    return "https://imgrush.com/%s" % response.hash
 
 
 def offsided_convert(title, url_to_convert):
